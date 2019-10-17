@@ -145,7 +145,7 @@ pycodestyle = ">=2.5.0,<2.6.0"
 pyflakes = ">=2.1.0,<2.2.0"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "Clean single-source support for Python 3 and 2"
 name = "future"
 optional = false
@@ -191,6 +191,18 @@ name = "hyperframe"
 optional = false
 python-versions = "*"
 version = "5.2.0"
+
+[[package]]
+category = "main"
+description = "Cython-based Python bindings for dear imgui"
+name = "imgui"
+optional = false
+python-versions = "*"
+version = "1.0.0"
+
+[package.dependencies]
+PyOpenGL = "*"
+pyglet = "*"
 
 [[package]]
 category = "dev"
@@ -645,6 +657,18 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.1.1"
 
 [[package]]
+category = "main"
+description = "Cross-platform windowing and multimedia library"
+marker = "extra == \"pyglet\""
+name = "pyglet"
+optional = false
+python-versions = "*"
+version = "1.4.5"
+
+[package.dependencies]
+future = "*"
+
+[[package]]
 category = "dev"
 description = "Pygments is a syntax highlighting package written in Python."
 name = "pygments"
@@ -703,6 +727,15 @@ version = "0.1.8"
 [package.dependencies]
 mypy = "*"
 python-language-server = "*"
+
+[[package]]
+category = "main"
+description = "Standard OpenGL bindings for Python"
+marker = "extra == \"pyglet\""
+name = "pyopengl"
+optional = false
+python-versions = "*"
+version = "3.1.0"
 
 [[package]]
 category = "dev"
@@ -1017,7 +1050,7 @@ version = "0.6.0"
 more-itertools = "*"
 
 [metadata]
-content-hash = "fb459a199b8508e2efdb2d48f9ac98a29fcb4cac5975f1672970f5da8df28fce"
+content-hash = "8b94a1c4f94876d67622a08d607036886f0531787d014871a7850b43ad0d4ade"
 python-versions = "3.8"
 
 [metadata.hashes]
@@ -1041,6 +1074,7 @@ grpclib = ["d19e2ea87cb073e5b0825dfee15336fd2b1c09278d271816e04c90faddc107ea"]
 h2 = ["ac377fcf586314ef3177bfd90c12c7826ab0840edeb03f0f24f511858326049e", "b8a32bd282594424c0ac55845377eea13fa54fe4a8db012f3a198ed923dc3ab4"]
 hpack = ["0edd79eda27a53ba5be2dfabf3b15780928a0dff6eb0c60a3d6767720e970c89", "8eec9c1f4bfae3408a3f30500261f7e6a65912dc138526ea054f9ad98892e9d2"]
 hyperframe = ["5187962cb16dcc078f23cb5a4b110098d546c3f41ff2d4038a9896893bbd0b40", "a9f5c17f2cc3c719b917c4f33ed1c61bd1f8dfac4b1bd23b7c80b3400971b41f"]
+imgui = ["01a0e970acdb37bb1c2f007cd5851e534d7eacf976f1af1e514964edec66a430", "02a6ff9058f46125ef78c5aa87bcf28316b16683547eac449d5d4ff92e09eaaf", "032679fb833c18569a639c971c0e0ef9b8952bb73f025e546a45a43ad4491aa2", "127e8cd4f2e3ac541f0205afe5cc91e7d1e59baa82e352c3264a0dd4994ab012", "264c493ffeee4dc8689c55b8c44eb05bf081a3a36115131c719fd743ab473a46", "280ecd1884bb630c13d6632f8ab6d7b3a13a21fc4ec598040112d401d6caa6f5", "37632df1543761840d089f39485d4eebb3af904f91c0ef58d20a01c600c8ff6e", "5ec09acd536f2a8f8c2d1f6d867f6eee17515c5d97f8474513bc2df5b3d4caf1", "699c65e80d5515afb211f4a6929ec27e0437af264afd98961318117c0b734398", "6e3ee42371c63455d2066f3d6474876090a00763749e714ad734560e1a31b97b", "73f084630667e056448d479f268e73bd2afb9b5e22375142a144d94efdd2c183", "754c8f2dd1ddfac3139945fbae56dd9667a62d66adbe3202f525e461cd9b8cb1", "7ef63836fdf186a20bddf8a47a0f7eb4d1784e8431bc03eb2a59990108cc6f9a", "8a88ec2e8d86fce495786d4d42804a396cbe6a25870a49ad47e80cf3288bb595", "9fa33edb9a2b4f9f8b6adb1d85f9c16bcf64305fd5dc5a441a3002b5fa50e38e", "a2cb45eaf7ccb76af69242f6c9896b963d8c700d131402f51eae2c6d87f14f40", "a4f08dd88f9ffb98a0f399195483131a56a2ab2569ca7f589c9b162cdfe36980", "a95c5ee9e55ba7346aa0cbaafd00c759c14dcb9ceb684e8aa9479bdef83b6a08", "aacbc565bd69e26976e1c5c2ddd70d2c7d5417caf66212f99c59edcbc782e564", "b4df8bb028c996cd277f5402f717ac498d8d301ca1152b731232cc1eb0e49b43", "b623298bc9495c866b4d3f4969553965241ab961baf3d74e5885c0ebdd00718e", "b7aa5a4822c8ada771a9d79f7637947a05637078be9841c61e4824faff758478", "bb6e2c7308656822e5f4115b8f3bc1f05cd830f179def289e65a696f87e62904", "c282d3bf08aef4d05d4255cddd4a59d71404dbc1ee241e450e4774f1152d9bb3", "c6aa6d4f2e91f9a87534a612219228a2dbf338de7c9ed4f9c62fbb8cb69be7da", "ca082fcc5589e939fa62f759a586bf756fd9ca18854139b4fd95fed4da86a4e8", "ce8e09e3c503be0cb7276d6817412833bf49f9764435b65c5fcc7d0529fa4440", "dfa97758c25e2651e7b41bb19932f1d898fbac86f835683bc2c30528d1d75424", "eda0be114825de93da602c6580909ebe6bc6f0819cf4a6763a25ea1f4f7fb9d3", "f122a2fe81da5e02f458deae630c1b55f95c0a2a70a3bcecbea1ee9ebf7fd959", "f9f53530a485b596c4d9b19d28e5b63f5787559d33bd567214dc86ac1f7aa54e"]
 importlib-metadata = ["aa18d7378b00b40847790e7c27e11673d7fed219354109d0e7b9e5b25dc3ad26", "d5f18a79777f3aa179c145737780282e27b508fc8fd688cb17c7a813e8bd39af"]
 ipykernel = ["167c3ef08450f5e060b76c749905acb0e0fbef9365899377a4a1eae728864383", "b503913e0b4cce7ed2de965457dfb2edd633e8234161a60e23f2fe2161345d12"]
 ipython = ["c4ab005921641e40a68e405e286e7a1fcc464497e14d81b6914b4fd95e5dee9b", "dd76831f065f17bddd7eaa5c781f5ea32de5ef217592cf019e34043b56895aa1"]
@@ -1080,11 +1114,13 @@ py = ["64f65755aee5b381cea27766a3a147c3f15b9b6b9ac88676de66ba2ae36793fa", "dc639
 pycodestyle = ["95a2219d12372f05704562a14ec30bc76b05a5b297b21a5dfe3f6fac3491ae56", "e40a936c9a450ad81df37f549d676d127b1b66000a6c500caa2b085bc0ca976c"]
 pydocstyle = ["04c84e034ebb56eb6396c820442b8c4499ac5eb94a3bda88951ac3dc519b6058", "66aff87ffe34b1e49bff2dd03a88ce6843be2f3346b0c9814410d34987fbab59"]
 pyflakes = ["17dbeb2e3f4d772725c777fabc446d5634d1038f234e77343108ce445ea69ce0", "d976835886f8c5b31d47970ed689944a0262b5f3afa00a5a7b4dc81e5449f8a2"]
+pyglet = ["6cdfbde022999de5598d5f8e1693063ebd9efa59ff3c20d82b033bc4b39fad69", "6f68af45fd25c4d855da8c2cd92453d1d26885ac7fd8e258be94e7d8e6e78407"]
 pygments = ["71e430bc85c88a430f000ac1d9b331d2407f681d6f6aec95e8bcfbc3df5b0127", "881c4c157e45f30af185c1ffe8d549d48ac9127433f2c380c24b84572ad66297"]
 pylint = ["7edbae11476c2182708063ac387a8f97c760d9cfe36a5ede0ca996f90cf346c8", "844ce067788028c1a35086a5c66bc5e599ddd851841c41d6ee1623b36774d9f2"]
 pyls-black = ["ba6364e92acfad97fb9b68928f90f5b266932e1da44ab0652606e4e91a5f4587", "d63149f53be4e1fbc6e7a99bb321cf58ae3cb46b8711c13c4f45c2081b8467da"]
 pyls-isort = ["5bad833dab833c4e8d61172428c6ff16e4d334d986fe5dd809aa55c2e7e4fb7f", "eaf323e12d652ed4ccf8365c1f65d55923e5ee5a9cbfa27bdd5f2941a14d16e6"]
 pyls-mypy = ["3fd83028961f0ca9eb3048b7a01cf42a9e3d46d8ea4935c1424c33da22c3eb03"]
+pyopengl = ["5b3a14a4e4c87cf25ca41bc5878583df0e434624b13fcc55d1a672f79ad1b76f", "9b47c5c3a094fa518ca88aeed35ae75834d53e4285512c61879f67a48c94ddaf", "efa4e39a49b906ccbe66758812ca81ced13a6f26931ab2ba2dba2750c016c0d0"]
 pyparsing = ["6f98a7b9397e206d78cc01df10131398f1c8b8510a2f4d97d9abd82e1aacdd80", "d9338df12903bbf5d65a0e4e87c2161968b10d2e489652bb47001d82a9b028b4"]
 pyrsistent = ["34b47fa169d6006b32e99d4b3c4031f155e6e68ebcc107d6454852e8e0ee6533"]
 pytest = ["7e4800063ccfc306a53c461442526c5571e1462f61583506ce97e4da6a1d88c8", "ca563435f4941d0cb34767301c27bc65c510cb82e90b9ecf9cb52dc2c63caaa0"]
