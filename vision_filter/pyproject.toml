@@ -16,6 +16,9 @@ python-language-server = {version = "^0.29.1", extras = ["flake8", "pydocstyle",
 pyls-isort = "^0.1.1"
 pyls-mypy = "^0.1.8"
 mypy = "^0.730.0"
+ipython = "^7.8"
+jupyter = "^1.0"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
