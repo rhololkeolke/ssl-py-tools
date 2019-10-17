@@ -57,7 +57,7 @@ class ProtobufBuild(build_ext):
 
             # import from python files at this module level
             for py_file in py_files:
-                f.write(f"from .{py_file.stem} import *")
+                f.write(f"from . import {py_file.stem}")
 
             # import submodules and generate init files recursively
             subdirs = [subdir for subdir in path.iterdir() if subdir.is_dir() and subdir.name != '__pycache__']
