@@ -2,6 +2,8 @@
 # Created by https://www.gitignore.io/api/linux,emacs,python
 # Edit at https://www.gitignore.io/?templates=linux,emacs,python
 
+vision_filter/vision_filter/proto/**
+
 ### Emacs ###
 # -*- mode: gitignore; -*-
 *~
