@@ -4,6 +4,6 @@ import "ssl/field/geometry.proto";
 import "google/protobuf/empty.proto";
 
 service FilterVisualizer {
-  rpc setFieldGeometry(ssl.field.GeometryFieldSize) returns (google.protobuf.Empty) {}
-  rpc getFieldGeometry(google.protobuf.Empty) returns (ssl.field.GeometryFieldSize) {}
+  rpc SetFieldGeometry(ssl.field.GeometryFieldSize) returns (google.protobuf.Empty) {}
+  rpc GetFieldGeometry(google.protobuf.Empty) returns (ssl.field.GeometryFieldSize) {}
 }
