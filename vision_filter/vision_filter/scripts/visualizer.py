@@ -1,10 +1,13 @@
+import asyncio
 import logging
 import signal
+from threading import Thread
 
 import click
 import structlog
 
 from vision_filter.ui import Visualizer
+from vision_filter.ui.grpc import FilterVisualizer
 
 logging.basicConfig(format="%(message)s")
 structlog.configure(
@@ -55,6 +58,11 @@ def cli(log_level, host, port):
         logging.getLogger().setLevel(log_level)
 
     log.info("Starting Visualizer")
-    visualizer = Visualizer(host=host, port=port)
+    visualizer = Visualizer()
     signal.signal(signal.SIGINT, lambda sig, frame: visualizer.exit())
-    visualizer.run()
+    visualizer_thread = Thread(target=visualizer.run)
+    visualizer_thread.start()
+
+    log.info("Starting Visualizer GRPC Server")
+    server = FilterVisualizer(visualizer, host=host, port=port)
+    asyncio.run(server.run())

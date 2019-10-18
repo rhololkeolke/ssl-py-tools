@@ -1,15 +1,13 @@
 import asyncio
 import logging
-from concurrent.futures import TimeoutError
-from threading import Thread
+import os
+import signal
 
 import imgui
 import pyglet
 import structlog
 from imgui.integrations.pyglet import PygletRenderer
 from pyglet import gl
-
-from .grpc import FilterVisualizer
 
 
 def _run_loop(loop):
@@ -18,53 +16,52 @@ def _run_loop(loop):
 
 
 class Visualizer:
-    def __init__(self, host=None, port=50051):
+    def __init__(self):
         self._log = structlog.get_logger()
         self._log.setLevel(logging.INFO)
+
+    def run(self):
+        self._log.debug("Running visualizer")
 
         # setup the rendering
         self.window = pyglet.window.Window(width=1280, height=720, resizable=True)
         imgui.create_context()
         self.renderer = PygletRenderer(self.window)
+        self.window.set_caption("Filter Visualizer")
         self.window.event(self.on_draw)
+        self.window.event(self.on_close)
 
         self.field_texture = None
-        self.on_draw()  # force first draw so we don't get a blank window
+        self.window.dispatch_event("on_draw")
 
-        # setup the server
-        self._server_loop = asyncio.new_event_loop()
-        Thread(target=lambda: _run_loop(self._server_loop)).start()
-        self._server = FilterVisualizer(host=host, port=port)
-        self._server_future = asyncio.run_coroutine_threadsafe(
-            self._server.run(), self._server_loop
-        )
-
-    def run(self):
-        self._log.info("Run")
         pyglet.app.run()
 
     def exit(self):
-        self._log.info("Exit called")
-        self.renderer.shutdown()
-        self._server.close()
-        self._server_loop.call_soon_threadsafe(self._server_loop.stop)
-        try:
-            self._server_future.result(0.5)
-        except TimeoutError:
-            self._log.warning(
-                "Server wait_closed did not finish within timeout. Canceling..."
-            )
-            self._server_future.cancel()
-        except Exception as exc:
-            self._log.error(f"Exception in server coroutine. {exc=}")
-        finally:
-            exit(0)
+        # close the window if not already closed
+        if self.window:
+            self.window.close()
 
     def on_draw(self):
         self._log.debug("on_draw")
         self.draw_field()
 
         self.draw_imgui()
+
+    def on_close(self):
+        """Runs with window.close and if user closes window via OS controls.
+
+        Perform cleanup here. This will shutdown the renderer, and set
+        the stored window to None to prevent reruns of window.close().
+
+        Also triggers SIGINT so that other services that have
+        registered handlers are cleanedup.
+
+        """
+        self._log.debug("on_close")
+        self.renderer.shutdown()
+        self.window = None
+
+        os.kill(os.getpid(), signal.SIGINT)
 
     def draw_field(self):
         self._log.debug("draw_field")
