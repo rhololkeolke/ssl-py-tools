@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "3.8"
-grpclib = "^0.3.0"
+grpclib = {version = "^0.3.0", allows-prereleases = true}
 imgui = {version = "^1.0", extras = ["pyglet"]}
 protobuf = "^3.10"
 protobuf-gen = "^0.0.4"
