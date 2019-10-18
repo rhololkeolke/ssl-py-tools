@@ -2,7 +2,7 @@ import logging
 
 import click
 import structlog
-from vision_filter.visualizer import Visualizer
+from vision_filter.ui import Visualizer
 
 logging.basicConfig(format="%(message)s")
 structlog.configure(
