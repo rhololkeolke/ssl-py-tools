@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from concurrent.futures import TimeoutError
 from threading import Thread
 
 import imgui
@@ -48,11 +49,14 @@ class Visualizer:
         self._server.close()
         self._server_loop.call_soon_threadsafe(self._server_loop.stop)
         try:
-            self._server_future.result(1)
-        except concurrent.futures.TimeoutError:
-            log.error(
-                "Failed to shutdown server. wait_closed did not finish within timeout"
+            self._server_future.result(0.5)
+        except TimeoutError:
+            self._log.warning(
+                "Server wait_closed did not finish within timeout. Canceling..."
             )
+            self._server_future.cancel()
+        except Exception as exc:
+            self._log.error(f"Exception in server coroutine. {exc=}")
         finally:
             exit(0)
 
