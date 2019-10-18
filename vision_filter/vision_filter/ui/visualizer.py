@@ -45,13 +45,13 @@ class Visualizer:
             new_field_geometry.CopyFrom(self._field_geometry)
         return new_field_geometry
 
-    def on_draw(self):
+    async def on_draw(self):
         self._log.debug("on_draw")
         self.draw_field()
 
         self.draw_imgui()
 
-    def on_close(self):
+    async def on_close(self):
         """Runs with window.close and if user closes window via OS controls.
 
         Perform cleanup here. This will shutdown the renderer, and set
@@ -67,18 +67,26 @@ class Visualizer:
 
         # os.kill(os.getpid(), signal.SIGINT)
 
-    def draw_field(self):
+    async def draw_field(self):
         self._log.debug("draw_field")
         # draw a diagonal white line
         gl.glClearColor(0.133, 0.545, 0.133, 1)
         self.window.clear()
         pyglet.gl.glLineWidth(100)
-        pyglet.graphics.draw(
-            2,
-            gl.GL_LINES,
-            ("v2i", (-10000, -10000, 10000, 10000)),
-            ("c3B", (255, 255, 255, 255, 255, 255)),
-        )
+
+        field_lines_batch = pyglet.graphics.Batch()
+        # TODO(dschwab): Scale/shift this based on camera zoom/position
+        async with self._field_geometry_lock:
+            for line in self._field_geometry.field_lines:
+                field_lines_batch.add(
+                    2,
+                    gl.GL_LINES,
+                    None,
+                    ("v2f", line.p1.x, line.p1.y, line.p2.x, line.p2.y),
+                    ("c3B", (255, 255, 255, 255, 255, 255)),
+                )
+
+            # TODO(dschwab): Draw arcs
 
         self.field_texture = (
             pyglet.image.get_buffer_manager().get_color_buffer().get_texture()
