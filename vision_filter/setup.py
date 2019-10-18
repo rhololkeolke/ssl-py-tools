@@ -136,5 +136,10 @@ setup(
     description="Filtering and visualization for SSL-Vision data",
     ext_modules=[ProtobufExtension("vision_filter")],
     cmdclass=dict(build_ext=ProtobufBuild),
+    install_requires=['Click'],
+    entry_points='''
+[console_scripts]
+vision_filter_visualizer=vision_filter.scripts.visualizer:cli
+''',
     zip_safe=False,
 )
