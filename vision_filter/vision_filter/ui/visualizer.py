@@ -16,14 +16,12 @@ def _run_loop(loop):
 
 
 class Visualizer:
-    def __init__(self):
+    def __init__(self, exit_event: asyncio.Event):
         self._log = structlog.get_logger()
         self._log.setLevel(logging.INFO)
 
-    def run(self):
-        self._log.debug("Running visualizer")
-
         # setup the rendering
+        self._exit_event = exit_event
         self.window = pyglet.window.Window(width=1280, height=720, resizable=True)
         imgui.create_context()
         self.renderer = PygletRenderer(self.window)
@@ -33,13 +31,6 @@ class Visualizer:
 
         self.field_texture = None
         self.window.dispatch_event("on_draw")
-
-        pyglet.app.run()
-
-    def exit(self):
-        # close the window if not already closed
-        if self.window:
-            self.window.close()
 
     def on_draw(self):
         self._log.debug("on_draw")
@@ -59,9 +50,9 @@ class Visualizer:
         """
         self._log.debug("on_close")
         self.renderer.shutdown()
-        self.window = None
+        self._exit_event.set()
 
-        os.kill(os.getpid(), signal.SIGINT)
+        # os.kill(os.getpid(), signal.SIGINT)
 
     def draw_field(self):
         self._log.debug("draw_field")
@@ -98,8 +89,8 @@ class Visualizer:
                     "Quit", "Ctrl+Q", False, True
                 )
 
-                if clicked_quit:
-                    self.exit()
+                # if clicked_quit:
+                #     self.exit()
 
                 imgui.end_menu()
             imgui.end_main_menu_bar()
