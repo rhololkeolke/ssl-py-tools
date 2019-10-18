@@ -1,25 +1,59 @@
+import asyncio
+import logging
+from threading import Thread
+
 import imgui
 import pyglet
 import structlog
 from imgui.integrations.pyglet import PygletRenderer
 from pyglet import gl
 
+from .grpc import FilterVisualizer
+
+
+def _run_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
 
 class Visualizer:
-    def __init__(self):
+    def __init__(self, host=None, port=50051):
         self._log = structlog.get_logger()
+        self._log.setLevel(logging.INFO)
 
+        # setup the rendering
         self.window = pyglet.window.Window(width=1280, height=720, resizable=True)
         imgui.create_context()
         self.renderer = PygletRenderer(self.window)
         self.window.event(self.on_draw)
 
         self.field_texture = None
+        self.on_draw()  # force first draw so we don't get a blank window
+
+        # setup the server
+        self._server_loop = asyncio.new_event_loop()
+        Thread(target=lambda: _run_loop(self._server_loop)).start()
+        self._server = FilterVisualizer(host=host, port=port)
+        self._server_future = asyncio.run_coroutine_threadsafe(
+            self._server.run(), self._server_loop
+        )
 
     def run(self):
         self._log.info("Run")
         pyglet.app.run()
+
+    def exit(self):
         self.renderer.shutdown()
+        self._server.close()
+        self._server_loop.call_soon_threadsafe(self._server_loop.stop)
+        try:
+            self._server_future.result(1)
+        except concurrent.futures.TimeoutError:
+            log.error(
+                "Failed to shutdown server. wait_closed did not finish within timeout"
+            )
+        finally:
+            exit(0)
 
     def on_draw(self):
         self._log.debug("on_draw")
@@ -59,11 +93,11 @@ class Visualizer:
         if imgui.begin_main_menu_bar():
             if imgui.begin_menu("File", True):
                 clicked_quit, selected_quit = imgui.menu_item(
-                    "Quit", "Cmd+Q", False, True
+                    "Quit", "Ctrl+Q", False, True
                 )
 
                 if clicked_quit:
-                    exit(1)
+                    self.exit()
 
                 imgui.end_menu()
             imgui.end_main_menu_bar()

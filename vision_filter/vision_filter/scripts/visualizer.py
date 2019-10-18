@@ -1,7 +1,9 @@
 import logging
+import asyncio
 
 import click
 import structlog
+
 from vision_filter.ui import Visualizer
 
 logging.basicConfig(format="%(message)s")
@@ -33,7 +35,15 @@ structlog.configure(
     envvar="LOG_LEVEL",
     help="Path to non-default logging configuration.",
 )
-def cli(log_level):
+@click.option(
+    "-h",
+    "--host",
+    default=None,
+    type=str,
+    help="GRPC host. Default binds to all interfaces.",
+)
+@click.option("-p", "--port", default=50051, type=int, help="GRPC port.")
+def cli(log_level, host, port):
     """Vision Filter Visualizer
 
     View filtered and unfiltered SSL Vision data. Adjust filter
@@ -45,5 +55,5 @@ def cli(log_level):
         logging.getLogger().setLevel(log_level)
 
     log.info("Starting Visualizer")
-    visualizer = Visualizer()
+    visualizer = Visualizer(host=host, port=port)
     visualizer.run()
