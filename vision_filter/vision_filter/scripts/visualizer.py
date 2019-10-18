@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import os
-import signal
 from typing import Optional
 
 import click
