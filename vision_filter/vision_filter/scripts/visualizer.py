@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import signal
 
 import click
 import structlog
@@ -56,4 +56,5 @@ def cli(log_level, host, port):
 
     log.info("Starting Visualizer")
     visualizer = Visualizer(host=host, port=port)
+    signal.signal(signal.SIGINT, lambda sig, frame: visualizer.exit())
     visualizer.run()

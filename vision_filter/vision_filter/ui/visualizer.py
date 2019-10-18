@@ -43,6 +43,7 @@ class Visualizer:
         pyglet.app.run()
 
     def exit(self):
+        self._log.info("Exit called")
         self.renderer.shutdown()
         self._server.close()
         self._server_loop.call_soon_threadsafe(self._server_loop.stop)
