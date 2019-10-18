@@ -15,15 +15,13 @@ class FilterVisualizerService(FilterVisualizerBase):
         self._log = structlog.get_logger()
         self._visualizer = visualizer
 
-        self.field_geometry = GeometryFieldSize()
-
     async def SetFieldGeometry(self, stream):
         request: GeometryFieldSize = await stream.recv_message()
         self._log.debug("SetFieldGeometry", request=request)
-        self.field_geometry = request
+        await self._visualizer.set_field_geometry(request)
         await stream.send_message(Empty())
 
     async def GetFieldGeometry(self, stream):
         request: Empty = await stream.recv_message()
         self._log.debug(f"GetFieldGeometry", request=request)
-        await stream.send_message(self.field_geometry)
+        await stream.send_message(await self._visualizer.get_field_geometry())

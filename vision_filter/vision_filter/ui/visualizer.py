@@ -1,13 +1,12 @@
 import asyncio
-import logging
-import os
-import signal
 
 import imgui
 import pyglet
 import structlog
 from imgui.integrations.pyglet import PygletRenderer
 from pyglet import gl
+
+from vision_filter.proto.ssl.field.geometry_pb2 import GeometryFieldSize
 
 
 def _run_loop(loop):
@@ -18,7 +17,6 @@ def _run_loop(loop):
 class Visualizer:
     def __init__(self, exit_event: asyncio.Event):
         self._log = structlog.get_logger()
-        self._log.setLevel(logging.INFO)
 
         # setup the rendering
         self._exit_event = exit_event
@@ -31,6 +29,21 @@ class Visualizer:
 
         self.field_texture = None
         self.window.dispatch_event("on_draw")
+
+        # state
+        self._field_geometry_lock: asyncio.Lock = asyncio.Lock()
+        self._field_geometry: GeometryFieldSize = GeometryFieldSize()
+
+    async def set_field_geometry(self, field_geometry: GeometryFieldSize):
+        async with self._field_geometry_lock:
+            self._field_geometry = field_geometry
+        self.window.dispatch_event("on_draw")
+
+    async def get_field_geometry(self) -> GeometryFieldSize:
+        new_field_geometry = GeometryFieldSize()
+        async with self._field_geometry_lock:
+            new_field_geometry.CopyFrom(self._field_geometry)
+        return new_field_geometry
 
     def on_draw(self):
         self._log.debug("on_draw")
