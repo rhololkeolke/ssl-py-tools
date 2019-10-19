@@ -1,4 +1,4 @@
-import asyncio
+from threading import Lock
 
 import imgui
 import pyglet
@@ -9,17 +9,11 @@ from pyglet import gl
 from vision_filter.proto.ssl.field.geometry_pb2 import GeometryFieldSize
 
 
-def _run_loop(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
 class Visualizer:
-    def __init__(self, exit_event: asyncio.Event):
+    def __init__(self):
         self._log = structlog.get_logger()
 
         # setup the rendering
-        self._exit_event = exit_event
         self.window = pyglet.window.Window(width=1280, height=720, resizable=True)
         imgui.create_context()
         self.renderer = PygletRenderer(self.window)
@@ -31,27 +25,28 @@ class Visualizer:
         self.window.dispatch_event("on_draw")
 
         # state
-        self._field_geometry_lock: asyncio.Lock = asyncio.Lock()
+        self._field_geometry_lock: Lock = Lock()
         self._field_geometry: GeometryFieldSize = GeometryFieldSize()
 
-    async def set_field_geometry(self, field_geometry: GeometryFieldSize):
-        async with self._field_geometry_lock:
-            self._field_geometry = field_geometry
-        self.window.dispatch_event("on_draw")
+    def set_field_geometry(self, field_geometry: GeometryFieldSize):
+        self._log.debug("set_field_geometry called", field_geometry=field_geometry)
+        with self._field_geometry_lock:
+            self._field_geometry.CopyFrom(field_geometry)
+        pyglet.clock.get_default().schedule_once(lambda dt: self.on_draw, delay=0)
 
-    async def get_field_geometry(self) -> GeometryFieldSize:
+    def get_field_geometry(self) -> GeometryFieldSize:
         new_field_geometry = GeometryFieldSize()
-        async with self._field_geometry_lock:
+        with self._field_geometry_lock:
             new_field_geometry.CopyFrom(self._field_geometry)
         return new_field_geometry
 
-    async def on_draw(self):
+    def on_draw(self):
         self._log.debug("on_draw")
         self.draw_field()
 
         self.draw_imgui()
 
-    async def on_close(self):
+    def on_close(self):
         """Runs with window.close and if user closes window via OS controls.
 
         Perform cleanup here. This will shutdown the renderer, and set
@@ -63,11 +58,8 @@ class Visualizer:
         """
         self._log.debug("on_close")
         self.renderer.shutdown()
-        self._exit_event.set()
 
-        # os.kill(os.getpid(), signal.SIGINT)
-
-    async def draw_field(self):
+    def draw_field(self):
         self._log.debug("draw_field")
         # draw a diagonal white line
         gl.glClearColor(0.133, 0.545, 0.133, 1)
@@ -76,17 +68,19 @@ class Visualizer:
 
         field_lines_batch = pyglet.graphics.Batch()
         # TODO(dschwab): Scale/shift this based on camera zoom/position
-        async with self._field_geometry_lock:
+        with self._field_geometry_lock:
             for line in self._field_geometry.field_lines:
                 field_lines_batch.add(
                     2,
                     gl.GL_LINES,
                     None,
-                    ("v2f", line.p1.x, line.p1.y, line.p2.x, line.p2.y),
+                    ("v2d", (line.p1.x, line.p1.y, line.p2.x, line.p2.y)),
                     ("c3B", (255, 255, 255, 255, 255, 255)),
                 )
 
             # TODO(dschwab): Draw arcs
+
+        field_lines_batch.draw()
 
         self.field_texture = (
             pyglet.image.get_buffer_manager().get_color_buffer().get_texture()
