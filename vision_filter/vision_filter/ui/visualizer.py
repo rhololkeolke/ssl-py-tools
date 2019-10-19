@@ -32,7 +32,8 @@ class Visualizer:
         self._log.debug("set_field_geometry called", field_geometry=field_geometry)
         with self._field_geometry_lock:
             self._field_geometry.CopyFrom(field_geometry)
-        pyglet.clock.get_default().schedule_once(lambda dt: self.on_draw, delay=0)
+
+        pyglet.app.platform_event_loop.post_event(self.window, "on_draw")
 
     def get_field_geometry(self) -> GeometryFieldSize:
         new_field_geometry = GeometryFieldSize()
@@ -100,12 +101,16 @@ class Visualizer:
         imgui.new_frame()
         if imgui.begin_main_menu_bar():
             if imgui.begin_menu("File", True):
-                clicked_quit, selected_quit = imgui.menu_item(
-                    "Quit", "Ctrl+Q", False, True
+                clicked_load_field_geometry, _ = imgui.menu_item(
+                    "Load Field Geometry", "", False, True
                 )
+                if clicked_load_field_geometry:
+                    self._log.warning("Load Field Geometry not implemented")
 
-                # if clicked_quit:
-                #     self.exit()
+                clicked_quit, _ = imgui.menu_item("Quit", "Ctrl+Q", False, True)
+
+                if clicked_quit:
+                    pyglet.app.platform_event_loop.post_event(self.window, "on_close")
 
                 imgui.end_menu()
             imgui.end_main_menu_bar()
