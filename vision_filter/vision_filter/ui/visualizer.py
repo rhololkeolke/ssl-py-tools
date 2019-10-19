@@ -8,13 +8,25 @@ from pyglet import gl
 
 from vision_filter.proto.ssl.field.geometry_pb2 import GeometryFieldSize
 
+from .util import Transform
+
+
+def _make_default_field_geometry() -> GeometryFieldSize:
+    field_geometry = GeometryFieldSize()
+    field_geometry.field_length = 12000
+    field_geometry.field_width = 9000
+    field_geometry.goal_width = 1200
+    field_geometry.goal_depth = 180
+    field_geometry.boundary_width = 250
+    return field_geometry
+
 
 class Visualizer:
-    def __init__(self):
+    def __init__(self, width: int = 1280, height: int = 720):
         self._log = structlog.get_logger()
 
         # setup the rendering
-        self.window = pyglet.window.Window(width=1280, height=720, resizable=True)
+        self.window = pyglet.window.Window(width=width, height=height, resizable=True)
         imgui.create_context()
         self.renderer = PygletRenderer(self.window)
         self.window.set_caption("Filter Visualizer")
@@ -26,12 +38,42 @@ class Visualizer:
 
         # state
         self._field_geometry_lock: Lock = Lock()
-        self._field_geometry: GeometryFieldSize = GeometryFieldSize()
+        self._field_geometry = _make_default_field_geometry()
+
+        self._set_base_transform()
+        self._camera_transform = Transform()
+
+    def _set_base_transform(self):
+        right = (
+            self._field_geometry.field_length / 2 + self._field_geometry.boundary_width
+        )
+        left = -right
+        top = self._field_geometry.field_width / 2 + self._field_geometry.boundary_width
+        bottom = -top
+
+        scaling = min(self.window.width, self.window.height)
+        scalex = scaling / (right - left)
+        scaley = scaling / (top - bottom)
+
+        if self.window.width < self.window.height:
+            transx = -left * scalex
+            transy = -bottom * self.window.height / (top - bottom)
+        elif self.window.width == self.window.height:
+            transx = -left * scalex
+            transy = -bottom * scaley
+        else:
+            transx = -left * self.window.width / (right - left)
+            transy = -bottom * scaley
+
+        self._base_transform = Transform(
+            translation=(transx, transy), scale=(scalex, scaley)
+        )
 
     def set_field_geometry(self, field_geometry: GeometryFieldSize):
         self._log.debug("set_field_geometry called", field_geometry=field_geometry)
         with self._field_geometry_lock:
             self._field_geometry.CopyFrom(field_geometry)
+            self._set_base_transform()
 
         pyglet.app.platform_event_loop.post_event(self.window, "on_draw")
 
@@ -65,6 +107,10 @@ class Visualizer:
         # draw a diagonal white line
         gl.glClearColor(0.133, 0.545, 0.133, 1)
         self.window.clear()
+
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
         pyglet.gl.glLineWidth(100)
 
         field_lines_batch = pyglet.graphics.Batch()
@@ -81,7 +127,9 @@ class Visualizer:
 
             # TODO(dschwab): Draw arcs
 
-        field_lines_batch.draw()
+        with self._base_transform:
+            with self._camera_transform:
+                field_lines_batch.draw()
 
         self.field_texture = (
             pyglet.image.get_buffer_manager().get_color_buffer().get_texture()
