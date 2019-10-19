@@ -1,4 +1,5 @@
 import ctypes
+import math
 from threading import Lock
 
 import imgui
@@ -20,6 +21,18 @@ def _make_default_field_geometry() -> GeometryFieldSize:
     field_geometry.goal_depth = 180
     field_geometry.boundary_width = 250
     return field_geometry
+
+
+class LineGroup(pyglet.graphics.Group):
+    def __init__(self, line_width: float, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.line_width = line_width
+
+    def set_state(self):
+        gl.glLineWidth(self.line_width)
+
+    def unset_state(self):
+        gl.glLineWidth(1.0)
 
 
 class Visualizer:
@@ -151,16 +164,29 @@ class Visualizer:
         # TODO(dschwab): Scale/shift this based on camera zoom/position
         with self._field_geometry_lock:
             for line in self._field_geometry.field_lines:
-                gl.glLineWidth(line.thickness)
                 field_lines_batch.add(
                     2,
                     gl.GL_LINES,
-                    None,
+                    LineGroup(line.thickness / 100),
                     ("v2d", (line.p1.x, line.p1.y, line.p2.x, line.p2.y)),
                     ("c3B", (255, 255, 255, 255, 255, 255)),
                 )
 
-            # TODO(dschwab): Draw arcs
+            for arc in self._field_geometry.field_arcs:
+                points = []
+                res = 30
+                for i in range(res):
+                    ang = arc.a1 + i * (arc.a2 - arc.a1) / res
+                    points.extend(
+                        [math.cos(ang) * arc.radius, math.sin(ang) * arc.radius]
+                    )
+                field_lines_batch.add(
+                    res,
+                    gl.GL_LINE_LOOP,
+                    LineGroup(arc.thickness / 100),
+                    ("v2d", points),
+                    ("c3B", [255 for _ in range(3 * res)]),
+                )
 
         with self._base_transform:
             with self._camera_transform:
