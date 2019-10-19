@@ -1,3 +1,4 @@
+import ctypes
 from threading import Lock
 
 import imgui
@@ -33,7 +34,47 @@ class Visualizer:
         self.window.event(self.on_draw)
         self.window.event(self.on_close)
 
-        self.field_texture = None
+        # create field framebuffer
+        self.field_buf = gl.GLuint(0)
+        gl.glGenFramebuffers(1, ctypes.byref(self.field_buf))
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.field_buf)
+
+        # create field texture
+        self.field_texture = gl.GLuint(0)
+        self.field_texture_width = width
+        self.field_texture_height = height
+        gl.glGenTextures(1, ctypes.byref(self.field_texture))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.field_texture)
+        gl.glTexImage2D(
+            gl.GL_TEXTURE_2D,
+            0,
+            gl.GL_RGBA,
+            width,
+            height,
+            0,
+            gl.GL_RGBA,
+            gl.GL_FLOAT,
+            None,
+        )
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+
+        # bind field texture to field framebuffer
+        gl.glFramebufferTexture2D(
+            gl.GL_FRAMEBUFFER,
+            gl.GL_COLOR_ATTACHMENT0,
+            gl.GL_TEXTURE_2D,
+            self.field_texture,
+            0,
+        )
+
+        # Something may have gone wrong during the process, depending on the
+        # capabilities of the GPU.
+        res = gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER)
+        if res != gl.GL_FRAMEBUFFER_COMPLETE:
+            raise RuntimeError("Framebuffer not completed")
+
         self.window.dispatch_event("on_draw")
 
         # state
@@ -51,23 +92,30 @@ class Visualizer:
         top = self._field_geometry.field_width / 2 + self._field_geometry.boundary_width
         bottom = -top
 
-        scaling = min(self.window.width, self.window.height)
-        scalex = scaling / (right - left)
-        scaley = scaling / (top - bottom)
+        field_aspect_ratio = (right - left) / (top - bottom)
 
-        if self.window.width < self.window.height:
-            transx = -left * scalex
-            transy = -bottom * self.window.height / (top - bottom)
-        elif self.window.width == self.window.height:
-            transx = -left * scalex
-            transy = -bottom * scaley
-        else:
-            transx = -left * self.window.width / (right - left)
-            transy = -bottom * scaley
+        scaley = self.field_texture_height / (top - bottom)
+        scalex = self.field_texture_width * field_aspect_ratio / (right - left)
+
+        transx = -left * self.window.width / (right - left)
+        transy = -bottom * self.window.height / (top - bottom)
 
         self._base_transform = Transform(
             translation=(transx, transy), scale=(scalex, scaley)
         )
+
+    def on_close(self):
+        """Runs with window.close and if user closes window via OS controls.
+
+        Perform cleanup here. This will shutdown the renderer, and set
+        the stored window to None to prevent reruns of window.close().
+
+        Also triggers SIGINT so that other services that have
+        registered handlers are cleanedup.
+
+        """
+        self._log.debug("on_close")
+        self.renderer.shutdown()
 
     def set_field_geometry(self, field_geometry: GeometryFieldSize):
         self._log.debug("set_field_geometry called", field_geometry=field_geometry)
@@ -89,24 +137,12 @@ class Visualizer:
 
         self.draw_imgui()
 
-    def on_close(self):
-        """Runs with window.close and if user closes window via OS controls.
-
-        Perform cleanup here. This will shutdown the renderer, and set
-        the stored window to None to prevent reruns of window.close().
-
-        Also triggers SIGINT so that other services that have
-        registered handlers are cleanedup.
-
-        """
-        self._log.debug("on_close")
-        self.renderer.shutdown()
-
     def draw_field(self):
         self._log.debug("draw_field")
-        # draw a diagonal white line
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.field_buf)
+        gl.glViewport(0, 0, self.field_texture_width, self.field_texture_height)
         gl.glClearColor(0.133, 0.545, 0.133, 1)
-        self.window.clear()
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
@@ -130,12 +166,11 @@ class Visualizer:
             with self._camera_transform:
                 field_lines_batch.draw()
 
-        self.field_texture = (
-            pyglet.image.get_buffer_manager().get_color_buffer().get_texture()
-        )
-
     def draw_imgui(self):
         self._log.debug("draw_imgui")
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+        gl.glViewport(0, 0, self.window.width, self.window.height)
+
         self.update_imgui()
 
         gl.glClearColor(1, 1, 1, 1)
@@ -162,13 +197,36 @@ class Visualizer:
                 imgui.end_menu()
             imgui.end_main_menu_bar()
 
-        imgui.show_test_window()
+        # imgui.show_test_window()
 
-        imgui.begin("Custom window", True)
-        imgui.image(
-            self.field_texture.id,
-            self.field_texture.width,
-            self.field_texture.height,
-            border_color=(1, 0, 0, 1),
+        imgui.set_next_window_position(0, 0)
+        display_size = imgui.get_io().display_size
+        imgui.set_next_window_size(display_size.x, display_size.y)
+        imgui.begin(
+            "Field",
+            flags=imgui.WINDOW_NO_TITLE_BAR
+            | imgui.WINDOW_NO_SCROLLBAR
+            | imgui.WINDOW_MENU_BAR
+            | imgui.WINDOW_NO_MOVE
+            | imgui.WINDOW_NO_RESIZE
+            | imgui.WINDOW_NO_COLLAPSE
+            | imgui.WINDOW_NO_BRING_TO_FRONT_ON_FOCUS,
         )
+
+        region_available = imgui.get_content_region_available()
+
+        image_aspect_ratio = self.field_texture_width / self.field_texture_height
+        height = region_available.y
+        width = height * image_aspect_ratio
+
+        cursor_pos = imgui.get_cursor_pos()
+        cursor_x = (
+            max(0, (region_available.x - width - cursor_pos.x) / 2) + cursor_pos.x
+        )
+        cursor_y = (
+            max(0, (region_available.y - height - cursor_pos.y) / 2) + cursor_pos.y
+        )
+        imgui.set_cursor_pos((cursor_x, cursor_y))
+        imgui.image(self.field_texture, width, height)
+
         imgui.end()
