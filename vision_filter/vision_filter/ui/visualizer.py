@@ -111,12 +111,11 @@ class Visualizer:
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        pyglet.gl.glLineWidth(100)
-
         field_lines_batch = pyglet.graphics.Batch()
         # TODO(dschwab): Scale/shift this based on camera zoom/position
         with self._field_geometry_lock:
             for line in self._field_geometry.field_lines:
+                gl.glLineWidth(line.thickness)
                 field_lines_batch.add(
                     2,
                     gl.GL_LINES,
