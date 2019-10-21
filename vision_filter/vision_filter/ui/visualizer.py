@@ -183,7 +183,10 @@ class Visualizer:
                 for i in range(res):
                     ang = arc.a1 + i * (arc.a2 - arc.a1) / res
                     points.extend(
-                        [math.cos(ang) * arc.radius, math.sin(ang) * arc.radius]
+                        [
+                            math.cos(ang) * arc.radius + arc.center.x,
+                            math.sin(ang) * arc.radius + arc.center.y,
+                        ]
                     )
                 field_lines_batch.add(
                     res,
