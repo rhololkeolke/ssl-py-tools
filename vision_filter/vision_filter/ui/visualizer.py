@@ -10,6 +10,7 @@ from pyglet import gl
 
 from vision_filter.proto.ssl.field.geometry_pb2 import GeometryFieldSize
 
+from .field_geometry_editor import FieldGeometryEditor
 from .util import Transform
 
 
@@ -97,6 +98,8 @@ class Visualizer:
         self._set_base_transform()
         self._camera_transform = Transform()
 
+        self._field_geometry_editor = FieldGeometryEditor(False)
+
     def _set_base_transform(self):
         right = (
             self._field_geometry.field_length / 2 + self._field_geometry.boundary_width
@@ -134,6 +137,8 @@ class Visualizer:
         self._log.debug("set_field_geometry called", field_geometry=field_geometry)
         with self._field_geometry_lock:
             self._field_geometry.CopyFrom(field_geometry)
+            self._field_line_expanded = [False] * len(self._field_geometry.field_lines)
+            self._field_arc_expanded = [False] * len(self._field_geometry.field_arc)
             self._set_base_transform()
 
         pyglet.app.platform_event_loop.post_event(self.window, "on_draw")
@@ -221,6 +226,14 @@ class Visualizer:
                     pyglet.app.platform_event_loop.post_event(self.window, "on_close")
 
                 imgui.end_menu()
+            if imgui.begin_menu("Edit", True):
+                clicked_edit_field_geometry, _ = imgui.menu_item(
+                    "Edit Field Geometry", "", False, True
+                )
+                if clicked_edit_field_geometry:
+                    self._field_geometry_editor.visible = True
+
+                imgui.end_menu()
             imgui.end_main_menu_bar()
 
         # imgui.show_test_window()
@@ -256,3 +269,7 @@ class Visualizer:
         imgui.image(self.field_texture, width, height)
 
         imgui.end()
+
+        if self._field_geometry_editor.visible:
+            with self._field_geometry_lock:
+                self._field_geometry_editor(self._field_geometry)
