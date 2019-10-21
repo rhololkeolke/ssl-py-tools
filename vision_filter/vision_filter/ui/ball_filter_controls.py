@@ -10,6 +10,7 @@ class BallFilterControls:
         self._log = structlog.get_logger()
 
         self.visible: bool = visible
+        self.start_timestamp = 0.0
         self.initial_state = np.zeros(ball_filter.dim_x)
         self.initial_P = np.ones(ball_filter.dim_x)
 
@@ -20,6 +21,11 @@ class BallFilterControls:
             return
 
         _, self.visible = imgui.begin("Ball Filter Controls", True)
+
+        changed, value = imgui.input_float("Start timestamp", self.start_timestamp)
+        if changed:
+            self.is_dirty = True
+            self.start_timestamp = value
 
         self._draw_initial_state()
         self._draw_initial_P()
