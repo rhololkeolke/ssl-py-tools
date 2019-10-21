@@ -14,6 +14,7 @@ from vision_filter.proto.ssl.detection.detection_pb2 import \
     Frame as DetectionFrame
 from vision_filter.proto.ssl.field.geometry_pb2 import GeometryFieldSize
 
+from .draw_options_editor import DrawOptionsEditor
 from .field_geometry_editor import FieldGeometryEditor
 from .util import Transform
 
@@ -96,6 +97,8 @@ class Visualizer:
         self.window.dispatch_event("on_draw")
 
         # state
+        self._draw_options_editor = DrawOptionsEditor()
+
         self._field_geometry_lock: Lock = Lock()
         self._field_geometry = _make_default_field_geometry()
 
@@ -214,31 +217,33 @@ class Visualizer:
 
         with self._base_transform:
             with self._camera_transform:
-                ball_res = 30
-                ball_colors = list(
-                    itertools.chain.from_iterable(
-                        (255, 165, 0) for _ in range(ball_res)
+                if self._draw_options_editor.draw_ball_detections_discrete:
+                    ball_res = 30
+                    ball_colors = list(
+                        itertools.chain.from_iterable(
+                            self._draw_options_editor.ball_detection_discrete_color
+                            for _ in range(ball_res)
+                        )
                     )
-                )
-                radius = 45
-                with self._detections_lock:
-                    for detection in self._detections:
-                        for ball in detection.balls:
-                            points = []
-                            for i in range(ball_res):
-                                ang = i * 2 * math.pi / ball_res
-                                points.extend(
-                                    [
-                                        math.cos(ang) * radius + ball.x,
-                                        math.sin(ang) * radius + ball.y,
-                                    ]
+                    radius = 45
+                    with self._detections_lock:
+                        for detection in self._detections:
+                            for ball in detection.balls:
+                                points = []
+                                for i in range(ball_res):
+                                    ang = i * 2 * math.pi / ball_res
+                                    points.extend(
+                                        [
+                                            math.cos(ang) * radius + ball.x,
+                                            math.sin(ang) * radius + ball.y,
+                                        ]
+                                    )
+                                pyglet.graphics.draw(
+                                    ball_res,
+                                    gl.GL_POLYGON,
+                                    ("v2d", points),
+                                    ("c4f", ball_colors),
                                 )
-                            pyglet.graphics.draw(
-                                ball_res,
-                                gl.GL_POLYGON,
-                                ("v2d", points),
-                                ("c3B", ball_colors),
-                            )
 
     def draw_imgui(self):
         self._log.debug("draw_imgui")
@@ -267,15 +272,27 @@ class Visualizer:
 
                 if clicked_quit:
                     pyglet.app.platform_event_loop.post_event(self.window, "on_close")
-
                 imgui.end_menu()
             if imgui.begin_menu("Edit", True):
                 clicked_edit_field_geometry, _ = imgui.menu_item(
-                    "Edit Field Geometry", "", False, True
+                    "Field Geometry", "", False, True
                 )
                 if clicked_edit_field_geometry:
                     self._field_geometry_editor.visible = True
 
+                clicked_edit_draw_options, _ = imgui.menu_item(
+                    "Draw Options", "", False, True
+                )
+                if clicked_edit_draw_options:
+                    self._draw_options_editor.visible = True
+
+                imgui.end_menu()
+            if imgui.begin_menu("Filters", True):
+                clicked_ball_filters, _ = imgui.menu_item(
+                    "Ball Filters", "", False, True
+                )
+                if clicked_ball_filters:
+                    pass
                 imgui.end_menu()
             imgui.end_main_menu_bar()
 
@@ -355,3 +372,5 @@ class Visualizer:
         if self._field_geometry_editor.visible:
             with self._field_geometry_lock:
                 self._field_geometry_editor(self._field_geometry)
+
+        self._draw_options_editor()
