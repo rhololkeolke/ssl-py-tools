@@ -419,3 +419,31 @@ class Visualizer:
 
         with self._ball_filter_lock:
             self._ball_filter_controls(self._ball_filter)
+
+        # have to do the actual filter processing here because the
+        # lock order must remain consistent in all lock locations.
+        #
+        # TODO(dschwab): Think about a better way of sharing the
+        # state. Probably copy to UI, modify, then copy back at end of
+        # UI loop. Means only have to lock things when copying and
+        # then can be unlocked in rest of UI loop.
+        if self._ball_filter_controls.is_dirty:
+            self._log.info("Rerunning ball filter")
+            with self._detections_lock:
+                with self._ball_filter_lock:
+                    self._ball_filter.timestamp = (
+                        self._ball_filter_controls.start_timestamp
+                    )
+                    self._ball_filter.x = self._ball_filter_controls.initial_state[
+                        :, None
+                    ]
+                    self._ball_filter.P = np.diag(self._ball_filter_controls.initial_P)
+                    self._ball_filter_saver = FilterSaver(self._ball_filter)
+
+                    for frame in self._detections:
+                        dt = frame.t_capture - self._ball_filter.timestamp
+                        self._ball_filter.predict(dt)
+                        for ball in frame.balls:
+                            self._ball_filter.update(np.array([[ball.x], [ball.y]]))
+                        self._ball_filter_saver.save()
+            self._ball_filter_controls.is_dirty = False
