@@ -101,6 +101,7 @@ class Visualizer:
 
         self._set_base_transform()
         self._camera_transform = Transform()
+        self._camera_drag_mouse_prev_pos = (0, 0)
 
         self._field_geometry_editor = FieldGeometryEditor(False)
 
@@ -311,6 +312,45 @@ class Visualizer:
         )
         imgui.set_cursor_pos((cursor_x, cursor_y))
         imgui.image(self.field_texture, width, height)
+
+        # camera controls
+        if imgui.is_item_hovered():
+            io = imgui.get_io()
+            mouse_wheel = io.mouse_wheel
+            if mouse_wheel != 0:
+                new_scale = [
+                    scale * (1 + mouse_wheel * 0.1)
+                    for scale in self._camera_transform.scale
+                ]
+                self._log.debug(
+                    "Changing zoom",
+                    mouse_wheel=mouse_wheel,
+                    current_scale=self._camera_transform.scale,
+                    new_scale=new_scale,
+                )
+                self._camera_transform.scale = new_scale
+
+            if io.mouse_down[0]:
+                curr_pos = imgui.get_mouse_position()
+                mouse_delta = [
+                    curr - prev
+                    for curr, prev in zip(curr_pos, self._camera_drag_mouse_prev_pos)
+                ]
+                new_translation = [
+                    trans + 10 * delta
+                    for trans, delta in zip(
+                        self._camera_transform.translation, mouse_delta
+                    )
+                ]
+
+                self._log.debug(
+                    "Dragging camera",
+                    mouse_delta=mouse_delta,
+                    new_translation=new_translation,
+                    old_translation=self._camera_transform.translation,
+                )
+                self._camera_transform.translation = new_translation
+            self._camera_drag_mouse_prev_pos = imgui.get_mouse_position()
 
         imgui.end()
 
