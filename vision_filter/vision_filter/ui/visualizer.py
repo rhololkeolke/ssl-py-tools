@@ -418,7 +418,7 @@ class Visualizer:
         self._draw_options_editor()
 
         with self._ball_filter_lock:
-            self._ball_filter_controls(self._ball_filter)
+            rerun_filter = self._ball_filter_controls(self._ball_filter)
 
         # have to do the actual filter processing here because the
         # lock order must remain consistent in all lock locations.
@@ -427,7 +427,7 @@ class Visualizer:
         # state. Probably copy to UI, modify, then copy back at end of
         # UI loop. Means only have to lock things when copying and
         # then can be unlocked in rest of UI loop.
-        if self._ball_filter_controls.is_dirty:
+        if self._ball_filter_controls.is_dirty and rerun_filter:
             self._log.info("Rerunning ball filter")
             with self._detections_lock:
                 with self._ball_filter_lock:

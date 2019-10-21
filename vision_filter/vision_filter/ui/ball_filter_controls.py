@@ -22,6 +22,8 @@ class BallFilterControls:
 
         _, self.visible = imgui.begin("Ball Filter Controls", True)
 
+        rerun_filter = imgui.button("Rerun Filter")
+
         changed, value = imgui.input_float("Start timestamp", self.start_timestamp)
         if changed:
             self.is_dirty = True
@@ -64,6 +66,8 @@ class BallFilterControls:
         self._draw_R(ball_filter)
 
         imgui.end()
+
+        return rerun_filter
 
     def _draw_initial_state(self):
         expanded, _ = imgui.collapsing_header("Initial State")
