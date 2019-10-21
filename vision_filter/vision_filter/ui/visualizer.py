@@ -45,6 +45,44 @@ class LineGroup(pyglet.graphics.Group):
         gl.glLineWidth(1.0)
 
 
+class Ball:
+    _ball_res: int = 30
+    _ball_points: List[float] = list(
+        itertools.chain.from_iterable(
+            (math.cos(i * 2 * math.pi / 30) * 45, math.sin(i * 2 * math.pi / 30) * 45)
+            for i in range(30)
+        )
+    )
+
+    def __init__(self, color: List[float]):
+        self._color = color
+        self._colors = list(
+            itertools.chain.from_iterable(self._color for _ in range(Ball._ball_res))
+        )
+        self._transform = Transform()
+
+    def draw_at(self, x: float, y: float):
+        self._transform.set_translation(x, y)
+        with self._transform:
+            pyglet.graphics.draw(
+                Ball._ball_res,
+                gl.GL_POLYGON,
+                ("v2d", Ball._ball_points),
+                ("c4f", self._colors),
+            )
+
+    @property
+    def color(self) -> List[float]:
+        return self._color
+
+    @color.setter
+    def color(self, value: List[float]):
+        self._color = value
+        self._colors = list(
+            itertools.chain.from_iterable(self._color for _ in range(Ball._ball_res))
+        )
+
+
 class Visualizer:
     def __init__(self, width: int = 1280, height: int = 720):
         self._log = structlog.get_logger()
@@ -98,10 +136,15 @@ class Visualizer:
         if res != gl.GL_FRAMEBUFFER_COMPLETE:
             raise RuntimeError("Framebuffer not completed")
 
+        self._detected_ball = Ball([1, 0.65, 0, 1])
+        self._filtered_ball = Ball([0.416, 0.353, 0.804, 1])
+
         self.window.dispatch_event("on_draw")
 
         # state
-        self._draw_options_editor = DrawOptionsEditor()
+        self._draw_options_editor = DrawOptionsEditor(
+            self._detected_ball, self._filtered_ball
+        )
 
         self._field_geometry_lock: Lock = Lock()
         self._field_geometry = _make_default_field_geometry()
@@ -233,62 +276,18 @@ class Visualizer:
         with self._base_transform:
             with self._camera_transform:
                 if self._draw_options_editor.draw_ball_detections_discrete:
-                    ball_res = 30
-                    ball_colors = list(
-                        itertools.chain.from_iterable(
-                            self._draw_options_editor.ball_detection_discrete_color
-                            for _ in range(ball_res)
-                        )
-                    )
-                    radius = 45
                     with self._detections_lock:
                         for detection in self._detections:
                             for ball in detection.balls:
-                                points = []
-                                for i in range(ball_res):
-                                    ang = i * 2 * math.pi / ball_res
-                                    points.extend(
-                                        [
-                                            math.cos(ang) * radius + ball.x,
-                                            math.sin(ang) * radius + ball.y,
-                                        ]
-                                    )
-                                pyglet.graphics.draw(
-                                    ball_res,
-                                    gl.GL_POLYGON,
-                                    ("v2d", points),
-                                    ("c4f", ball_colors),
-                                )
+                                self._detected_ball.draw_at(ball.x, ball.y)
 
         if self._draw_options_editor.draw_ball_filter_discrete:
             with self._base_transform:
                 with self._camera_transform:
-                    ball_res = 30
-                    ball_colors = list(
-                        itertools.chain.from_iterable(
-                            self._draw_options_editor.ball_filter_discrete_color
-                            for _ in range(ball_res)
-                        )
-                    )
-                    radius = 45
                     with self._ball_filter_lock:
                         if hasattr(self._ball_filter_saver, "x"):
                             for x in self._ball_filter_saver.x:
-                                points = []
-                                for i in range(ball_res):
-                                    ang = i * 2 * math.pi / ball_res
-                                    points.extend(
-                                        [
-                                            math.cos(ang) * radius + x[0],
-                                            math.sin(ang) * radius + x[2],
-                                        ]
-                                    )
-                                pyglet.graphics.draw(
-                                    ball_res,
-                                    gl.GL_POLYGON,
-                                    ("v2d", points),
-                                    ("c4f", ball_colors),
-                                )
+                                self._filtered_ball.draw_at(x[0], x[2])
 
     def draw_imgui(self):
         self._log.debug("draw_imgui")
@@ -417,5 +416,6 @@ class Visualizer:
                 self._field_geometry_editor(self._field_geometry)
 
         self._draw_options_editor()
+
         with self._ball_filter_lock:
             self._ball_filter_controls(self._ball_filter)

@@ -6,14 +6,14 @@ import structlog
 
 
 class DrawOptionsEditor:
-    def __init__(self, visible: bool = False):
+    def __init__(self, detected_ball, filtered_ball, visible: bool = False):
         self._log = structlog.get_logger()
         self.visible: bool = visible
         self.draw_ball_detections_discrete: bool = True
-        self.ball_detection_discrete_color: List[float] = [1.0, 0.65, 0.0, 1.0]
+        self.detected_ball = detected_ball
 
         self.draw_ball_filter_discrete: bool = True
-        self.ball_filter_discrete_color: List[float] = [0.416, 0.353, 0.804, 1.0]
+        self.filtered_ball = filtered_ball
 
     def __call__(self):
         if not self.visible:
@@ -27,9 +27,11 @@ class DrawOptionsEditor:
                 "Draw discrete", self.draw_ball_detections_discrete
             )
             if self.draw_ball_detections_discrete:
-                changed, self.ball_detection_discrete_color = imgui.color_edit4(
-                    "Discrete ball color", *self.ball_detection_discrete_color
+                changed, value = imgui.color_edit4(
+                    "Discrete ball color", *self.detected_ball.color
                 )
+                if changed:
+                    self.detected_ball.color = value
 
         expanded, _ = imgui.collapsing_header("Ball Filter Options")
         if expanded:
@@ -37,8 +39,10 @@ class DrawOptionsEditor:
                 "Draw discrete", self.draw_ball_filter_discrete
             )
             if self.draw_ball_filter_discrete:
-                changed, self.ball_filter_discrete_color = imgui.color_edit4(
-                    "Discrete ball color", *self.ball_filter_discrete_color
+                changed, value = imgui.color_edit4(
+                    "Discrete ball color", *self.filtered_ball.color
                 )
+                if changed:
+                    self.filtered_ball.color = value
 
         imgui.end()
