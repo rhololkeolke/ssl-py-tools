@@ -68,6 +68,11 @@ class FieldGeometryEditor:
                 self._log.error(f"Boundary width cannot be negative. Got {value}.")
 
     def _edit_field_lines(self, field_geometry: GeometryFieldSize):
+        while len(self._field_line_expanded) < len(field_geometry.field_lines):
+            self._field_line_expanded.append(False)
+        while len(self._field_line_expanded) > len(field_geometry.field_lines):
+            del self._field_line_expanded[-1]
+
         imgui.text("Field Lines")
         imgui.separator()
         lines_to_delete = []
@@ -110,6 +115,11 @@ class FieldGeometryEditor:
             self._field_line_expanded.append(False)
 
     def _edit_field_arcs(self, field_geometry: GeometryFieldSize):
+        while len(self._field_arc_expanded) < len(field_geometry.field_arcs):
+            self._field_arc_expanded.append(False)
+        while len(self._field_arc_expanded) > len(field_geometry.field_arcs):
+            del self._field_arc_expanded[-1]
+
         imgui.text("Field Arcs")
         imgui.separator()
         arcs_to_delete = []

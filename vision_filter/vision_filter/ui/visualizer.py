@@ -137,8 +137,6 @@ class Visualizer:
         self._log.debug("set_field_geometry called", field_geometry=field_geometry)
         with self._field_geometry_lock:
             self._field_geometry.CopyFrom(field_geometry)
-            self._field_line_expanded = [False] * len(self._field_geometry.field_lines)
-            self._field_arc_expanded = [False] * len(self._field_geometry.field_arc)
             self._set_base_transform()
 
         pyglet.app.platform_event_loop.post_event(self.window, "on_draw")
