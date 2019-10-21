@@ -215,13 +215,13 @@ class Visualizer:
         ball_detections_batch = pyglet.graphics.Batch()
         ball_res = 30
         ball_colors = list(
-            itertools.chain.from_iterable((255, 0, 0) for _ in range(ball_res))
+            itertools.chain.from_iterable((255, 165, 0) for _ in range(ball_res))
         )
+        radius = 45
         with self._detections_lock:
             for detection in self._detections:
                 for ball in detection.balls:
                     points = []
-                    radius = math.sqrt(ball.area / math.pi)
                     for i in range(ball_res):
                         ang = i * 2 * math.pi / ball_res
                         points.extend(
