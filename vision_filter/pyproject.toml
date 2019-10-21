@@ -18,6 +18,7 @@ grpcio = "^1.24"
 grpcio-reflection = "^1.24"
 numpy = "^1.17"
 filterpy = "^1.4"
+sympy = "^1.4"
 
 [tool.poetry.dev-dependencies]
 pyls-black = "^0.4.4"
