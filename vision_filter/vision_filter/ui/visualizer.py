@@ -1,6 +1,8 @@
 import ctypes
+import itertools
 import math
 from threading import Lock
+from typing import List
 
 import imgui
 import pyglet
@@ -208,6 +210,36 @@ class Visualizer:
         with self._base_transform:
             with self._camera_transform:
                 field_lines_batch.draw()
+
+        ball_detections_batch = pyglet.graphics.Batch()
+        ball_res = 30
+        ball_colors = list(
+            itertools.chain.from_iterable((255, 0, 0) for _ in range(ball_res))
+        )
+        with self._detections_lock:
+            for detection in self._detections:
+                for ball in detection.balls:
+                    points = []
+                    radius = math.sqrt(ball.area / math.pi)
+                    for i in range(ball_res):
+                        ang = i * 2 * math.pi / ball_res
+                        points.extend(
+                            [
+                                math.cos(ang) * radius + ball.x,
+                                math.sin(ang) * radius + ball.y,
+                            ]
+                        )
+                    ball_detections_batch.add(
+                        ball_res,
+                        gl.GL_POLYGON,
+                        None,
+                        ("v2d", points),
+                        ("c3B", ball_colors),
+                    )
+
+        with self._base_transform:
+            with self._camera_transform:
+                ball_detections_batch.draw()
 
     def draw_imgui(self):
         self._log.debug("draw_imgui")
