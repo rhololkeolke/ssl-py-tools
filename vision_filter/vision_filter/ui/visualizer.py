@@ -5,15 +5,19 @@ from threading import Lock
 from typing import List
 
 import imgui
+import numpy as np
 import pyglet
 import structlog
+from filterpy.common import Saver as FilterSaver
 from imgui.integrations.pyglet import PygletRenderer
 from pyglet import gl
 
+from vision_filter.filter.ball import BasicBallFilter
 from vision_filter.proto.ssl.detection.detection_pb2 import \
     Frame as DetectionFrame
 from vision_filter.proto.ssl.field.geometry_pb2 import GeometryFieldSize
 
+from .ball_filter_controls import BallFilterControls
 from .draw_options_editor import DrawOptionsEditor
 from .field_geometry_editor import FieldGeometryEditor
 from .util import Transform
@@ -111,6 +115,11 @@ class Visualizer:
         self._detections_lock: Lock = Lock()
         self._detections: List[DetectionFrame] = []
 
+        self._ball_filter_lock = Lock()
+        self._ball_filter = BasicBallFilter()
+        self._ball_filter_saver = FilterSaver(self._ball_filter)
+        self._ball_filter_controls = BallFilterControls(self._ball_filter)
+
     def _set_base_transform(self):
         right = (
             self._field_geometry.field_length / 2 + self._field_geometry.boundary_width
@@ -149,6 +158,12 @@ class Visualizer:
         # make this a heap or some sort of btree?
         with self._detections_lock:
             self._detections.append(frame)
+            with self._ball_filter_lock:
+                dt = frame.t_capture - self._ball_filter.timestamp
+                self._ball_filter.predict(dt)
+                for ball in frame.balls:
+                    self._ball_filter.update(np.array([[ball.x], [ball.y]]))
+                self._ball_filter_saver.save()
 
     def set_field_geometry(self, field_geometry: GeometryFieldSize):
         self._log.debug("set_field_geometry called", field_geometry=field_geometry)
@@ -245,6 +260,36 @@ class Visualizer:
                                     ("c4f", ball_colors),
                                 )
 
+        if self._draw_options_editor.draw_ball_filter_discrete:
+            with self._base_transform:
+                with self._camera_transform:
+                    ball_res = 30
+                    ball_colors = list(
+                        itertools.chain.from_iterable(
+                            self._draw_options_editor.ball_filter_discrete_color
+                            for _ in range(ball_res)
+                        )
+                    )
+                    radius = 45
+                    with self._ball_filter_lock:
+                        if hasattr(self._ball_filter_saver, "x"):
+                            for x in self._ball_filter_saver.x:
+                                points = []
+                                for i in range(ball_res):
+                                    ang = i * 2 * math.pi / ball_res
+                                    points.extend(
+                                        [
+                                            math.cos(ang) * radius + x[0],
+                                            math.sin(ang) * radius + x[2],
+                                        ]
+                                    )
+                                pyglet.graphics.draw(
+                                    ball_res,
+                                    gl.GL_POLYGON,
+                                    ("v2d", points),
+                                    ("c4f", ball_colors),
+                                )
+
     def draw_imgui(self):
         self._log.debug("draw_imgui")
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
@@ -288,11 +333,9 @@ class Visualizer:
 
                 imgui.end_menu()
             if imgui.begin_menu("Filters", True):
-                clicked_ball_filters, _ = imgui.menu_item(
-                    "Ball Filters", "", False, True
-                )
-                if clicked_ball_filters:
-                    pass
+                clicked, _ = imgui.menu_item("Ball Filters", "", False, True)
+                if clicked:
+                    self._ball_filter_controls.visible = True
                 imgui.end_menu()
             imgui.end_main_menu_bar()
 
@@ -374,3 +417,5 @@ class Visualizer:
                 self._field_geometry_editor(self._field_geometry)
 
         self._draw_options_editor()
+        with self._ball_filter_lock:
+            self._ball_filter_controls(self._ball_filter)
