@@ -1,9 +1,12 @@
 syntax = "proto3";
 
 import "ssl/field/geometry.proto";
+import "ssl/detection/detection.proto";
 import "google/protobuf/empty.proto";
 
 service FilterVisualizer {
   rpc SetFieldGeometry(ssl.field.GeometryFieldSize) returns (google.protobuf.Empty) {}
   rpc GetFieldGeometry(google.protobuf.Empty) returns (ssl.field.GeometryFieldSize) {}
+  // Add detections as received to the visualizer UI
+  rpc AddDetections(stream ssl.detection.Frame) returns (google.protobuf.Empty) {}
 }

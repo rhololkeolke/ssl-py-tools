@@ -8,6 +8,8 @@ import structlog
 from imgui.integrations.pyglet import PygletRenderer
 from pyglet import gl
 
+from vision_filter.proto.ssl.detection.detection_pb2 import \
+    Frame as DetectionFrame
 from vision_filter.proto.ssl.field.geometry_pb2 import GeometryFieldSize
 
 from .field_geometry_editor import FieldGeometryEditor
@@ -100,6 +102,9 @@ class Visualizer:
 
         self._field_geometry_editor = FieldGeometryEditor(False)
 
+        self._detections_lock: Lock = Lock()
+        self._detections: List[DetectionFrame] = []
+
     def _set_base_transform(self):
         right = (
             self._field_geometry.field_length / 2 + self._field_geometry.boundary_width
@@ -132,6 +137,12 @@ class Visualizer:
         """
         self._log.debug("on_close")
         self.renderer.shutdown()
+
+    def add_detection(self, frame: DetectionFrame):
+        # TODO(dschwab): Should add sorted by capture time. So maybe
+        # make this a heap or some sort of btree?
+        with self._detections_lock:
+            self._detections.append(frame)
 
     def set_field_geometry(self, field_geometry: GeometryFieldSize):
         self._log.debug("set_field_geometry called", field_geometry=field_geometry)
