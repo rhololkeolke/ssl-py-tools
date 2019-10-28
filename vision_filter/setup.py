@@ -55,7 +55,7 @@ def rename_protobuf_imports(
     dir_root: str, root: str, do_not_replace: Optional[List[str]] = None
 ):
     do_not_replace = do_not_replace or ["google.protobuf"]
-    pattern = re.compile(r"^import ([^ ]+)_pb2$")
+    pattern = re.compile(r"^import ([^ ]+)_pb2( as ([^ ]+)\n)?$")
 
     print("Patching 'import *_pb2' statements")
     for path, _, files in os.walk(dir_root):
@@ -84,14 +84,19 @@ def rename_protobuf_imports(
                         not in do_not_replace
                     ):
                         changes += 1
+                        uses_import_as = match.group(3) is not None
                         # convert foo.bar syntax to foo_dot_bar
-                        new_name = match.group(1).replace(".", "_dot_")
-                        f.write(
-                            f"import {root}.{match.group(1)}_pb2 as {new_name}__pb2\n"
-                        )
-                        replacements.append(
-                            (f"{match.group(1)}_pb2", f"{new_name}__pb2")
-                        )
+                        if uses_import_as:
+                            new_name = match.group(3)
+                        else:
+                            new_name = f"{match.group(1).replace('.', '_dot_')}__pb2"
+
+                        f.write(f"import {root}.{match.group(1)}_pb2 as {new_name}\n")
+
+                        if not uses_import_as:
+                            replacements.append(
+                                (f"{match.group(1)}_pb2", f"{new_name}")
+                            )
                     else:
                         # There is probably a better way of doing this
                         for find, replace in replacements:
@@ -136,10 +141,11 @@ setup(
     description="Filtering and visualization for SSL-Vision data",
     ext_modules=[ProtobufExtension("vision_filter")],
     cmdclass=dict(build_ext=ProtobufBuild),
-    install_requires=['Click'],
-    entry_points='''
+    install_requires=["Click"],
+    entry_points="""
 [console_scripts]
 vision_filter_visualizer=vision_filter.scripts.visualizer:cli
-''',
+vision_filter=vision_filter.scripts.vision_filter:cli
+""",
     zip_safe=False,
 )
