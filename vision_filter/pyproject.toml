@@ -20,6 +20,7 @@ numpy = "^1.17"
 filterpy = "^1.4"
 sympy = "^1.4"
 trio = "^0.12.1"
+BTrees = "^4.6"
 
 [tool.poetry.dev-dependencies]
 pyls-black = "^0.4.4"
