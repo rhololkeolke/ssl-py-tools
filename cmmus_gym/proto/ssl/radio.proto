@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package ssl.radio;
+import "google/protobuf/empty.proto";
+
+// Service for interacting with SSL robots via radio
+service Radio {
+  // send a single command and get the latest feedback
+  rpc UnaryCommand(RobotCommands) returns (RobotFeedback) {}
+  // get the latest feedback without sending a command
+  rpc GetLatestFeedback(google.protobuf.Empty) returns (RobotFeedback) {}
+  // send a stream of commands and ignore feedback
+  rpc CommandStream(stream RobotCommands) returns (google.protobuf.Empty) {}
+  // Return feedback data as it arrives
+  rpc FeedbackStream(google.protobuf.Empty) returns (stream RobotFeedback) {}
+}
+
+// RobotCommand is a message for a single robot
+message RobotCommand {
+  repeated sint32 wheel_velocity = 1;
+  sint32 dribble_power = 2;
+  // unset if no kick is desired
+  oneof kick_power {
+    uint32 chip_kick_power = 3;
+    uint32 flat_kick_power = 4;
+  }
+  bool beep = 5;
+  bool request_feedback = 6;
+}
+
+// RobotCommands is a message containing multiple RobotCommand
+// messages, one for each specified robot id.
+message RobotCommands {
+  map<uint32, RobotCommand> commands = 1;
+}
+
+message SingleRobotFeedback {
+  double battery_voltage = 1;
+  uint32 kick_voltage = 2;
+  uint32 pid_timestamp = 3;
+  repeated sint32 wheel_pos = 4;
+  repeated sint32 current_reading = 5;
+  bool did_flat_kick = 6;
+  bool did_chip_kick = 7;
+  uint32 packets_per_second = 8;
+}
+
+message RobotFeedback {
+  map<uint32, SingleRobotFeedback> feedback = 1;
+}
