@@ -7,6 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "3.8"
+gym = "^0.15.3"
 
 [tool.poetry.dev-dependencies]
 pyls-black = "^0.4.4"
