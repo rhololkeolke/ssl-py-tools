@@ -69,8 +69,7 @@ async def main(
         nursery.start_soon(vision_server.send_messages)
         nursery.start_soon(print_messages, print_detection_recv)
         nursery.start_soon(print_messages, print_geometry_recv)
-        while True:
-            await vision_client.recv_message()
+        nursery.start_soon(vision_client.run)
 
 
 @click.command()

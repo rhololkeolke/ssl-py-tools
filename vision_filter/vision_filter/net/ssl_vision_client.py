@@ -129,3 +129,7 @@ class SSLVisionClient:
 
                 for i in reversed(channels_to_delete):
                     del self.__geometry_channels[i]
+
+    async def run(self):
+        while True:
+            await self.recv_message()
