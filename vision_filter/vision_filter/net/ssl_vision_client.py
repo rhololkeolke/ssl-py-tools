@@ -85,13 +85,11 @@ class SSLVisionClient:
                 "Queueing detection message", detection=wrapper_packet.detection
             )
             async with self.__detection_channels_lock:
-                print("sending detections")
+
                 send_funcs = []
 
                 for i, chan in enumerate(self.__detection_channels):
-                    send_funcs.append(
-                        partial(chan.send, wrapper_packet.detection)
-                    )
+                    send_funcs.append(partial(chan.send, wrapper_packet.detection))
 
                 results = await run_all(*send_funcs)
 
@@ -110,13 +108,10 @@ class SSLVisionClient:
                 "Queueing geometry message", geometry=wrapper_packet.geometry
             )
             async with self.__geometry_channels_lock:
-                print("sending geometrys")
                 send_funcs = []
 
                 for i, chan in enumerate(self.__geometry_channels):
-                    send_funcs.append(
-                        partial(chan.send, wrapper_packet.geometry)
-                    )
+                    send_funcs.append(partial(chan.send, wrapper_packet.geometry))
 
                 results = await run_all(*send_funcs)
 
