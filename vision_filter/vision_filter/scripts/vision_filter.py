@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Optional
+from typing import Literal, Optional, Union
 
 import click
 import structlog
@@ -28,13 +28,10 @@ structlog.configure(
 )
 
 
-async def print_messages(
-    recv_channel: trio.MemoryReceiveChannel, send_channel: trio.MemorySendChannel
-):
-    async with recv_channel, send_channel:
+async def print_messages(recv_channel: trio.MemoryReceiveChannel):
+    async with recv_channel:
         async for message in recv_channel:
             print(message)
-            await send_channel.send(message)
 
 
 async def main(
@@ -42,30 +39,22 @@ async def main(
     multicast_group: str,
     recv_port: int,
     send_port: int,
-    queue_size: Optional[int],
+    queue_size: Union[int, Literal[math.inf]],  # type: ignore
 ):
-    log.info("Using message queue size of {queue_size or math.inf}")
-    (client_detection_send, print_detection_recv) = trio.open_memory_channel(
-        queue_size or math.inf
-    )
-    (client_geometry_send, print_geometry_recv) = trio.open_memory_channel(
-        queue_size or math.inf
-    )
-    (print_detection_send, server_detection_recv) = trio.open_memory_channel(
-        queue_size or math.inf
-    )
-    (print_geometry_send, server_geometry_recv) = trio.open_memory_channel(
-        queue_size or math.inf
-    )
+    log.info("Using message queue size of {queue_size}")
 
     log.info(
         "Creating SSL Vision Client",
         multicast_group=multicast_group,
         recv_port=recv_port,
     )
-    vision_client = await SSLVisionClient.create(
-        multicast_group, recv_port, client_detection_send, client_geometry_send
-    )
+    vision_client = await SSLVisionClient.create(multicast_group, recv_port)
+
+    print_detection_recv = vision_client.create_detection_channel(queue_size)
+    print_geometry_recv = vision_client.create_geometry_channel(queue_size)
+
+    repub_detection_recv = vision_client.create_detection_channel(queue_size)
+    repub_geometry_recv = vision_client.create_geometry_channel(queue_size)
 
     log.info(
         "Creating SSL Vision Server",
@@ -73,19 +62,15 @@ async def main(
         send_port=send_port,
     )
     vision_server = SSLVisionServer(
-        server_detection_recv, server_geometry_recv, multicast_group, send_port
+        repub_detection_recv, repub_geometry_recv, multicast_group, send_port
     )
 
     async with trio.open_nursery() as nursery:
         nursery.start_soon(vision_server.send_messages)
-        nursery.start_soon(print_messages, print_detection_recv, print_detection_send)
-        nursery.start_soon(print_messages, print_geometry_recv, print_geometry_send)
-        try:
-            while True:
-                await vision_client.recv_message(nursery)
-        except KeyboardInterrupt:
-            await client_detection_send.aclose()
-            await client_geometry_send.aclose()
+        nursery.start_soon(print_messages, print_detection_recv)
+        nursery.start_soon(print_messages, print_geometry_recv)
+        while True:
+            await vision_client.recv_message(nursery)
 
 
 @click.command()
@@ -120,4 +105,4 @@ def cli(
     if log_level:
         log.setLevel(log_level)
 
-    trio.run(main, log, multicast_group, recv_port, send_port, queue_size)
+    trio.run(main, log, multicast_group, recv_port, send_port, queue_size or math.inf)

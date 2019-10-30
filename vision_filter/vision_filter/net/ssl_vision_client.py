@@ -1,5 +1,6 @@
+import math
 import struct
-from typing import Optional
+from typing import List, Literal, Optional, Union
 
 import structlog
 import trio
@@ -17,11 +18,7 @@ class SSLVisionClient:
         return client
 
     def __init__(
-        self,
-        multicast_group: str = "224.5.23.2",
-        port: int = 10_006,
-        detection_messages: Optional[MemorySendChannel] = None,
-        geometry_messages: Optional[MemorySendChannel] = None,
+        self, multicast_group: str = "224.5.23.2", port: int = 10_006,
     ):
         self._log = structlog.get_logger().bind(
             multicast_group=multicast_group, port=port
@@ -29,8 +26,9 @@ class SSLVisionClient:
         self._log.info("Creating SSL Vision client")
         self.multicast_group = multicast_group
         self.port = port
-        self.detection_messages = detection_messages
-        self.geometry_messages = geometry_messages
+
+        self._detection_channels: List[MemorySendChannel] = []
+        self._geometry_channels: List[MemorySendChannel] = []
 
         # don't create a new bytestring everytime we receive a UDP
         # packet
@@ -48,6 +46,20 @@ class SSLVisionClient:
         )
         self._sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
+    def create_detection_channel(
+        self, queue_size: Union[int, Literal[math.inf]]  # type: ignore
+    ):
+        send, recv = trio.open_memory_channel(queue_size)
+        self._detection_channels.append(send)
+        return recv
+
+    def create_geometry_channel(
+        self, queue_size: Union[int, Literal[math.inf]]  # type: ignore
+    ):
+        send, recv = trio.open_memory_channel(queue_size)
+        self._geometry_channels.append(send)
+        return recv
+
     async def recv_message(self, nursery: trio.Nursery):
         self._log.debug("Listening for new message")
         num_bytes = await self._sock.recv_into(self.__recv_view)
@@ -59,14 +71,16 @@ class SSLVisionClient:
         wrapper_packet.ParseFromString(data_view)
 
         self._log.debug("Wrapper packet", wrapper_packet=wrapper_packet)
-        if wrapper_packet.HasField("detection") and self.detection_messages is not None:
+        if wrapper_packet.HasField("detection"):
             self._log.debug(
                 "Queueing detection message", detection=wrapper_packet.detection
             )
-            nursery.start_soon(self.detection_messages.send, wrapper_packet.detection)
+            for chan in self._detection_channels:
+                nursery.start_soon(chan.send, wrapper_packet.detection)
 
-        if wrapper_packet.HasField("geometry") and self.geometry_messages is not None:
+        if wrapper_packet.HasField("geometry"):
             self._log.debug(
                 "Queueing geometry message", detection=wrapper_packet.geometry
             )
-            nursery.start_soon(self.geometry_messages.send, wrapper_packet.geometry)
+            for chan in self._geometry_channels:
+                nursery.start_soon(chan.send, wrapper_packet.geometry)
