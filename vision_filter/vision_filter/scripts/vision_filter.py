@@ -50,11 +50,11 @@ async def main(
     )
     vision_client = await SSLVisionClient.create(multicast_group, recv_port)
 
-    print_detection_recv = vision_client.create_detection_channel(queue_size)
-    print_geometry_recv = vision_client.create_geometry_channel(queue_size)
+    print_detection_recv = await vision_client.create_detection_channel(queue_size)
+    print_geometry_recv = await vision_client.create_geometry_channel(queue_size)
 
-    repub_detection_recv = vision_client.create_detection_channel(queue_size)
-    repub_geometry_recv = vision_client.create_geometry_channel(queue_size)
+    repub_detection_recv = await vision_client.create_detection_channel(queue_size)
+    repub_geometry_recv = await vision_client.create_geometry_channel(queue_size)
 
     log.info(
         "Creating SSL Vision Server",

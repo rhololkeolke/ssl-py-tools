@@ -1,13 +1,17 @@
 import math
 import struct
+from functools import partial
 from typing import List, Literal, Optional, Union
 
+import outcome
 import structlog
 import trio
+from google.protobuf.message import Message as ProtobufMessage
 from trio import MemorySendChannel, socket
 
 from vision_filter.proto.messages_robocup_ssl_wrapper_pb2 import \
     SSL_WrapperPacket
+from vision_filter.util import run_all
 
 
 class SSLVisionClient:
@@ -27,8 +31,11 @@ class SSLVisionClient:
         self.multicast_group = multicast_group
         self.port = port
 
-        self._detection_channels: List[MemorySendChannel] = []
-        self._geometry_channels: List[MemorySendChannel] = []
+        self.__detection_channels_lock = trio.Lock()
+        self.__detection_channels: List[MemorySendChannel] = []
+
+        self.__geometry_channels_lock = trio.Lock()
+        self.__geometry_channels: List[MemorySendChannel] = []
 
         # don't create a new bytestring everytime we receive a UDP
         # packet
@@ -46,18 +53,20 @@ class SSLVisionClient:
         )
         self._sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-    def create_detection_channel(
+    async def create_detection_channel(
         self, queue_size: Union[int, Literal[math.inf]]  # type: ignore
     ):
         send, recv = trio.open_memory_channel(queue_size)
-        self._detection_channels.append(send)
+        async with self.__detection_channels_lock:
+            self.__detection_channels.append(send)
         return recv
 
-    def create_geometry_channel(
+    async def create_geometry_channel(
         self, queue_size: Union[int, Literal[math.inf]]  # type: ignore
     ):
         send, recv = trio.open_memory_channel(queue_size)
-        self._geometry_channels.append(send)
+        async with self.__geometry_channels_lock:
+            self.__geometry_channels.append(send)
         return recv
 
     async def recv_message(self, nursery: trio.Nursery):
@@ -75,12 +84,48 @@ class SSLVisionClient:
             self._log.debug(
                 "Queueing detection message", detection=wrapper_packet.detection
             )
-            for chan in self._detection_channels:
-                nursery.start_soon(chan.send, wrapper_packet.detection)
+            async with self.__detection_channels_lock:
+                print("sending detections")
+                send_funcs = []
+
+                for i, chan in enumerate(self.__detection_channels):
+                    send_funcs.append(
+                        partial(chan.send, wrapper_packet.detection)
+                    )
+
+                results = await run_all(*send_funcs)
+
+                channels_to_delete: List[int] = []
+                for i, result in enumerate(results):
+                    try:
+                        result.unwrap()
+                    except trio.BrokenResourceError:
+                        channels_to_delete.append(i)
+
+                for i in reversed(channels_to_delete):
+                    del self.__detection_channels[i]
 
         if wrapper_packet.HasField("geometry"):
             self._log.debug(
-                "Queueing geometry message", detection=wrapper_packet.geometry
+                "Queueing geometry message", geometry=wrapper_packet.geometry
             )
-            for chan in self._geometry_channels:
-                nursery.start_soon(chan.send, wrapper_packet.geometry)
+            async with self.__geometry_channels_lock:
+                print("sending geometrys")
+                send_funcs = []
+
+                for i, chan in enumerate(self.__geometry_channels):
+                    send_funcs.append(
+                        partial(chan.send, wrapper_packet.geometry)
+                    )
+
+                results = await run_all(*send_funcs)
+
+                channels_to_delete = []
+                for i, result in enumerate(results):
+                    try:
+                        result.unwrap()
+                    except trio.BrokenResourceError:
+                        channels_to_delete.append(i)
+
+                for i in reversed(channels_to_delete):
+                    del self.__geometry_channels[i]
