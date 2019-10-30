@@ -69,7 +69,7 @@ class SSLVisionClient:
             self.__geometry_channels.append(send)
         return recv
 
-    async def recv_message(self, nursery: trio.Nursery):
+    async def recv_message(self):
         self._log.debug("Listening for new message")
         num_bytes = await self._sock.recv_into(self.__recv_view)
         data_view = self.__recv_view[:num_bytes]
