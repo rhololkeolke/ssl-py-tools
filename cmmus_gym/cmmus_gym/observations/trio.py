@@ -3,18 +3,13 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, Optional
+from .core import ObservationStats
 
 import structlog
 import trio
 
 from vision_filter.proto.messages_robocup_ssl_detection_pb2 import \
     SSL_DetectionFrame
-
-
-@dataclass
-class ObservationStats:
-    num_updates: int = 0
-    last_update_time: Optional[float] = None
 
 
 class TrioObservation:
