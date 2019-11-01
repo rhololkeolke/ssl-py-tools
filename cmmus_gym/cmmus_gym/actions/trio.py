@@ -11,12 +11,7 @@ import trio_util
 from cmmus_gym.proto.ssl.radio_grpc import RadioStub
 from cmmus_gym.proto.ssl.radio_pb2 import RobotCommands
 
-
-@dataclass
-class ActionClientStats:
-    num_sent: int = 0
-    last_set_action_time: Optional[float] = None
-    last_action_sent_time: Optional[float] = None
+from .core import ActionClientStats
 
 
 class TrioActionClient:
