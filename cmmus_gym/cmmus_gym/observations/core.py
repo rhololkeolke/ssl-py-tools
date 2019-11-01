@@ -9,3 +9,4 @@ from typing import Optional
 class ObservationStats:
     num_updates: int = 0
     last_update_time: Optional[float] = None
+    last_update_time_ns: Optional[int] = None
