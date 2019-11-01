@@ -28,6 +28,7 @@ jupyter = "^1.0"
 pudb = "^2019.1"
 pyls-flake8 = {git = "https://github.com/emanspeaks/pyls-flake8.git"}
 pytest-trio = "^0.5.2"
+grpcio-testing = "^1.24"
 
 [build-system]
 requires = ["poetry>=0.12"]
