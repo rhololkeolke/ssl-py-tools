@@ -1,6 +1,5 @@
 """Asynchronously send commands to robot."""
 
-from dataclasses import dataclass
 from typing import Any, Optional
 
 import numpy as np
@@ -11,7 +10,7 @@ import trio_util
 from cmmus_gym.proto.ssl.radio_grpc import RadioStub
 from cmmus_gym.proto.ssl.radio_pb2 import RobotCommands
 
-from .core import ActionClientStats
+from .core import ActionClientStats, RawMovementAction
 
 
 class TrioActionClient:
@@ -48,22 +47,6 @@ class TrioActionClient:
 
         """
         raise NotImplementedError
-
-
-@dataclass
-class RawMovementAction:
-    robot_id: int
-    # Should be in range [-1, 1]. They will be scaled to the
-    # appropriate radio commands automatically
-    wheel_velocities: np.ndarray
-
-    def to_proto(self, message: RobotCommands):
-        robot_command = message.commands[self.robot_id]
-
-        wheel_velocities = np.clip(127 * self.wheel_velocities, -127, 127).astype(
-            np.int8
-        )
-        robot_command.wheel_velocity[:] = wheel_velocities
 
 
 class RawMovementActionClient(TrioActionClient):
