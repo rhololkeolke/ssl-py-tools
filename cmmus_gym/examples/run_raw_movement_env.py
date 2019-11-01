@@ -9,10 +9,10 @@ import structlog
 import trio
 import trio_util
 
-from cmmus_gym.actions import (ActionClient, ActionClientStats,
-                               RawMovementAction, RawMovementActionClient)
-from cmmus_gym.env import SingleRobotMovementEnv, Team
-from cmmus_gym.observations import RawVisionObservations
+from cmmus_gym.actions.trio import (ActionClient, ActionClientStats,
+                                    RawMovementAction, RawMovementActionClient)
+from cmmus_gym.env.trio import SingleRobotMovementEnv, Team
+from cmmus_gym.observations.trio import RawVisionObservations
 from vision_filter.net import SSLVisionClient
 
 logging.basicConfig(format="%(message)s")

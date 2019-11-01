@@ -1,7 +1,6 @@
 """Gym environment implementations."""
 from enum import Enum
-from functools import partial
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
 import structlog
@@ -9,8 +8,8 @@ import trio
 from gym import spaces
 from gym.core import Env
 
-from cmmus_gym.actions import RawMovementAction, RawMovementActionClient
-from cmmus_gym.observations import RawVisionObservations
+from cmmus_gym.actions.trio import RawMovementAction, RawMovementActionClient
+from cmmus_gym.observations.trio import RawVisionObservations
 from vision_filter.proto.messages_robocup_ssl_detection_pb2 import \
     SSL_DetectionFrame
 

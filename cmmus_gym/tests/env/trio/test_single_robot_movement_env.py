@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import trio
 
-from cmmus_gym.env import SingleRobotMovementEnv, Team
+from cmmus_gym.env.trio import SingleRobotMovementEnv, Team
 from vision_filter.proto.messages_robocup_ssl_detection_pb2 import \
     SSL_DetectionFrame
 

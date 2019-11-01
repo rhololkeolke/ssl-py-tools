@@ -19,7 +19,7 @@ class ActionClientStats:
     last_action_sent_time: Optional[float] = None
 
 
-class ActionClient:
+class TrioActionClient:
     """Asynchronously send actions to robot(s)."""
 
     async def run(self, period: float):
@@ -71,7 +71,7 @@ class RawMovementAction:
         robot_command.wheel_velocity[:] = wheel_velocities
 
 
-class RawMovementActionClient(ActionClient):
+class RawMovementActionClient(TrioActionClient):
     """Sends raw movement commands to a single robot."""
 
     def __init__(self, radio: RadioStub):

@@ -2,7 +2,7 @@ import mock
 import numpy as np
 import trio
 
-from cmmus_gym.actions import RawMovementAction, RawMovementActionClient
+from cmmus_gym.actions.trio import RawMovementAction, RawMovementActionClient
 from cmmus_gym.proto.ssl.radio_pb2 import RobotCommands
 
 

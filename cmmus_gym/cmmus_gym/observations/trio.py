@@ -17,7 +17,7 @@ class ObservationStats:
     last_update_time: Optional[float] = None
 
 
-class Observation:
+class TrioObservation:
     """Stores latest observations obtained asynchronously."""
 
     async def run(self):
@@ -46,7 +46,7 @@ class Observation:
         raise NotImplementedError
 
 
-class RawVisionObservations(Observation):
+class RawVisionObservations(TrioObservation):
     """Retrieve latest SSL-Vision detections."""
 
     def __init__(self, detections: trio.MemoryReceiveChannel):
