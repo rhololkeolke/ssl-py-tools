@@ -11,7 +11,8 @@ import trio_util
 
 from cmmus_gym.actions.trio import (ActionClient, ActionClientStats,
                                     RawMovementAction, RawMovementActionClient)
-from cmmus_gym.env.trio import SingleRobotMovementEnv, Team
+from cmmus_gym.env.trio import SingleRobotMovementEnv
+from cmmus_gym.env import Team
 from cmmus_gym.observations.trio import RawVisionObservations
 from vision_filter.net import SSLVisionClient
 

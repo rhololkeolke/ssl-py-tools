@@ -1,5 +1,4 @@
 """Gym environment implementations."""
-from enum import Enum
 from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
@@ -12,6 +11,8 @@ from cmmus_gym.actions.trio import RawMovementAction, RawMovementActionClient
 from cmmus_gym.observations.trio import RawVisionObservations
 from vision_filter.proto.messages_robocup_ssl_detection_pb2 import \
     SSL_DetectionFrame
+
+from .core import Team
 
 
 class AsyncEnv(Env):
@@ -34,11 +35,6 @@ class AsyncEnv(Env):
 
     def seed(self, seed: Any = None):
         raise NotImplementedError
-
-
-class Team(Enum):
-    BLUE = 1
-    YELLOW = 2
 
 
 _STATE_TYPE = Dict[str, Any]
