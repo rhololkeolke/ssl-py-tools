@@ -91,7 +91,7 @@ def run_environment(
             if is_terminal:
                 break
 
-            action = 0.01 * np.ones(4)
+            action = 0.4 * np.ones(4)
             log.info("Taking action", action=action)
             state, reward, is_terminal, debug = env.step(action)
             log.info(
@@ -107,10 +107,7 @@ def run_environment(
 
             elapsed_time = time.time() - start_time
 
-            sleep_time = 1 / env_freq - elapsed_time
-            if sleep_time > 0:
-                log.debug("Sleeping", sleep_time=sleep_time)
-                time.sleep(sleep_time)
+            log.debug(f"{elapsed_time=}")
 
 
 @click.command()
@@ -195,6 +192,7 @@ def main(
             action_client,
             zero_reward,
             never_terminate,
+            env_freq,
         )
         with manage_environment(env):
             run_environment(

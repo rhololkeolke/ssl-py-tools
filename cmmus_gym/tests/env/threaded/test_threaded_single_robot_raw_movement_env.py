@@ -72,6 +72,7 @@ def test_bad_robot_id(bad_robot_id, mock_observations, mock_action_client):
             mock_action_client,
             dummy_reward,
             dummy_is_terminal,
+            20,
         )
 
     env = SingleRobotRawMovementEnv(
@@ -84,6 +85,7 @@ def test_bad_robot_id(bad_robot_id, mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
     with pytest.raises(ValueError):
         env.robot_id = bad_robot_id
@@ -102,6 +104,7 @@ def test_bad_num_cameras(bad_num_cameras, mock_observations, mock_action_client)
             mock_action_client,
             dummy_reward,
             dummy_is_terminal,
+            20,
         )
 
     env = SingleRobotRawMovementEnv(
@@ -114,6 +117,7 @@ def test_bad_num_cameras(bad_num_cameras, mock_observations, mock_action_client)
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
     with pytest.raises(ValueError):
         env.num_cameras = bad_num_cameras
@@ -132,6 +136,7 @@ def test_bad_field_width(bad_field_width, mock_observations, mock_action_client)
             mock_action_client,
             dummy_reward,
             dummy_is_terminal,
+            20,
         )
 
     env = SingleRobotRawMovementEnv(
@@ -144,6 +149,7 @@ def test_bad_field_width(bad_field_width, mock_observations, mock_action_client)
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
     with pytest.raises(ValueError):
         env.field_width = bad_field_width
@@ -162,6 +168,7 @@ def test_bad_field_length(bad_field_length, mock_observations, mock_action_clien
             mock_action_client,
             dummy_reward,
             dummy_is_terminal,
+            20,
         )
 
     env = SingleRobotRawMovementEnv(
@@ -174,9 +181,42 @@ def test_bad_field_length(bad_field_length, mock_observations, mock_action_clien
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
     with pytest.raises(ValueError):
         env.field_length = bad_field_length
+
+
+@given(bad_control_frequency=one_of(just(0.0), floats(max_value=0)))
+def test_bad_field_length(bad_control_frequency, mock_observations, mock_action_client):
+    with pytest.raises(ValueError):
+        SingleRobotRawMovementEnv(
+            0,
+            Team.BLUE,
+            4,
+            5000,
+            3000,
+            mock_observations,
+            mock_action_client,
+            dummy_reward,
+            dummy_is_terminal,
+            bad_control_frequency,
+        )
+
+    env = SingleRobotRawMovementEnv(
+        0,
+        Team.BLUE,
+        4,
+        3000,
+        5000,
+        mock_observations,
+        mock_action_client,
+        dummy_reward,
+        dummy_is_terminal,
+        20,
+    )
+    with pytest.raises(ValueError):
+        env.control_frequency = bad_control_frequency
 
 
 def test_is_running_property(mock_observations, mock_action_client):
@@ -190,6 +230,7 @@ def test_is_running_property(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     assert not mock_observations.is_alive()
@@ -240,6 +281,7 @@ def test_observation_space(num_cameras, mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
     example_obs = env.observation_space.sample()
     assert len(example_obs) == 2 * num_cameras
@@ -265,6 +307,7 @@ def test_observation_space_updated_on_num_cameras_change(
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     example_obs = env.observation_space.sample()
@@ -302,6 +345,7 @@ def test_action_space_configured(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     assert np.all(env.action_space.low == -np.ones(4))
@@ -319,6 +363,7 @@ def test_reset_when_not_running(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     assert not env.is_running
@@ -338,6 +383,7 @@ def test_step_when_not_running(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     assert not env.is_running
@@ -357,6 +403,7 @@ def test_close_when_not_running(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     assert not env.is_running
@@ -378,6 +425,7 @@ def test_no_observations(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     env.start()
@@ -448,6 +496,7 @@ def test_observations_of_diff_robot(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     env.start()
@@ -525,6 +574,7 @@ def test_observations_of_expected_robot(mock_observations, mock_action_client):
         mock_action_client,
         dummy_reward,
         dummy_is_terminal,
+        20,
     )
 
     env.start()

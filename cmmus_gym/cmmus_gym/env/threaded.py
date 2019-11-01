@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Tuple
+import time
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 import structlog
@@ -32,6 +33,7 @@ class SingleRobotRawMovementEnv(Env):
         action_client: RawMovementActionClient,
         reward_func: _REWARD_FUNC_SIG,
         is_terminal_func: _IS_TERMINAL_FUNC_SIG,
+        control_frequency: float,
     ):
         self._log = structlog.get_logger().bind(
             robot_id=robot_id,
@@ -54,6 +56,10 @@ class SingleRobotRawMovementEnv(Env):
             raise ValueError(f"field_length must be > 0. Got {field_length}")
         self._field_length = field_length
 
+        if control_frequency <= 0:
+            raise ValueError(f"control_frequency must b > 0. Got {control_frequency}")
+        self._control_frequency = control_frequency
+
         self.__update_observation_space()
 
         self.action_space = spaces.Box(low=-1, high=1, shape=(4,))
@@ -61,7 +67,7 @@ class SingleRobotRawMovementEnv(Env):
         self.vision_observations = vision_observations
         self.action_client = action_client
 
-        self._curr_state: _STATE_TYPE = self.__make_empty_observation_state()
+        self._curr_state: Optional[_STATE_TYPE] = None
 
         self.reward_func = reward_func
         self.is_terminal_func = is_terminal_func
@@ -84,9 +90,6 @@ class SingleRobotRawMovementEnv(Env):
 
         all_observations = {**positions, **detections}
         self.observation_space = spaces.Dict(all_observations)
-
-    def __make_empty_observation_state(self) -> _STATE_TYPE:
-        pass
 
     @property
     def is_running(self) -> bool:
@@ -139,7 +142,17 @@ class SingleRobotRawMovementEnv(Env):
         self.__update_observation_space()
 
     @property
-    def curr_state(self) -> _STATE_TYPE:
+    def control_frequency(self) -> float:
+        return self._control_frequency
+
+    @control_frequency.setter
+    def control_frequency(self, value: float):
+        if value <= 0:
+            raise ValueError(f"control_frequency must be > 0. Got {value}")
+        self._control_frequency = value
+
+    @property
+    def curr_state(self) -> Optional[_STATE_TYPE]:
         return self._curr_state
 
     def start(self):
@@ -161,6 +174,9 @@ class SingleRobotRawMovementEnv(Env):
         raw_detections = self.vision_observations.get_latest()
         state = self._filter_raw_observations(raw_detections)
         self._curr_state = state
+
+        time.sleep(1 / self._control_frequency)
+
         return state
 
     def step(
@@ -176,6 +192,8 @@ class SingleRobotRawMovementEnv(Env):
         # set the action
         raw_movement_action = RawMovementAction(self._robot_id, action.copy())
         self.action_client.set_action(raw_movement_action)
+
+        time.sleep(1 / self._control_frequency)
 
         raw_detections = self.vision_observations.get_latest()
         state = self._filter_raw_observations(raw_detections)
