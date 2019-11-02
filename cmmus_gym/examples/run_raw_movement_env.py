@@ -91,7 +91,7 @@ def run_environment(
             if is_terminal:
                 break
 
-            action = 0.4 * np.ones(4)
+            action = 0.3 * np.random.rand(4)
             log.info("Taking action", action=action)
             state, reward, is_terminal, debug = env.step(action)
             log.info(
