@@ -107,7 +107,7 @@ def run_environment(
 
             elapsed_time = time.time() - start_time
 
-            log.debug(f"{elapsed_time=}")
+            log.debug(f"elapsed_time={elapsed_time}")
 
 
 @click.command()
